@@ -1,0 +1,14 @@
+[
+  { "word": "planet", "clue": "Orbits a star." },
+  { "word": "galaxy", "clue": "Collection of billions of stars." },
+  { "word": "nebula", "clue": "Colorful cloud of dust and gas." },
+  { "word": "rocket", "clue": "Vehicle that breaks through Earth's atmosphere." },
+  { "word": "comet", "clue": "Icy body with a glowing tail." },
+  { "word": "meteor", "clue": "A shooting star in the night sky." },
+  { "word": "astronomy", "clue": "Science of observing celestial objects." },
+  { "word": "orbit", "clue": "Path a planet follows." },
+  { "word": "telescope", "clue": "Instrument for viewing distant objects." },
+  { "word": "apollo", "clue": "NASA program that landed on the moon." },
+  { "word": "venus", "clue": "Second planet from the sun." },
+  { "word": "eclipse", "clue": "When one space body blocks another." }
+]
