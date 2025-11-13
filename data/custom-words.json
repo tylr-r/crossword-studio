@@ -1,0 +1,318 @@
+[
+  {
+    "word": "SEATTLE",
+    "clue": "City where you both live"
+  },
+  {
+    "word": "MADIA",
+    "clue": "Your partner and daily co-chef"
+  },
+  {
+    "word": "TYLR",
+    "clue": "Your preferred short name"
+  },
+  {
+    "word": "LAKEUNION",
+    "clue": "The water you overlook at home"
+  },
+  {
+    "word": "TESLA",
+    "clue": "Your white Model 3 LR"
+  },
+  {
+    "word": "FSD",
+    "clue": "Your autonomous driving add-on"
+  },
+  {
+    "word": "ICELAND",
+    "clue": "Trip you took together in 2024"
+  },
+  {
+    "word": "STEAK",
+    "clue": "Dinner you like to cook together"
+  },
+  {
+    "word": "SOUP",
+    "clue": "What she makes when she’s not busy"
+  },
+  {
+    "word": "PORTER",
+    "clue": "Artist whose concert you both went to"
+  },
+  {
+    "word": "ALANWATTS",
+    "clue": "Philosopher who shaped your worldview"
+  },
+  {
+    "word": "DAOISM",
+    "clue": "Ancient philosophy you explore"
+  },
+  {
+    "word": "BITCOIN",
+    "clue": "Your favorite topic in finance"
+  },
+  {
+    "word": "HOUSEFOCUS",
+    "clue": "Playlist you work to"
+  },
+  {
+    "word": "MINECRAFT",
+    "clue": "Your modding obsession"
+  },
+  {
+    "word": "CRAFTY",
+    "clue": "Controller you use for servers"
+  },
+  {
+    "word": "JELLYFISH",
+    "clue": "Pet idea you considered"
+  },
+  {
+    "word": "TRAZODONE",
+    "clue": "Sleep med in your routine"
+  },
+  {
+    "word": "ADDERALL",
+    "clue": "Stimulant you experimented with"
+  },
+  {
+    "word": "THERAPY",
+    "clue": "Something you’re both working on together"
+  },
+  {
+    "word": "AMEX",
+    "clue": "Your premium travel card"
+  },
+  {
+    "word": "CYCLING",
+    "clue": "Hobby tied to your carbon bike"
+  },
+  {
+    "word": "HIKING",
+    "clue": "Your shared outdoor activity"
+  },
+  {
+    "word": "SNORKEL",
+    "clue": "What she can do instead of diving"
+  },
+  {
+    "word": "DESIGN",
+    "clue": "Your craft and background"
+  },
+  {
+    "word": "FIGMA",
+    "clue": "Tool you build AI features for"
+  },
+  {
+    "word": "HELIX",
+    "clue": "Your personal AI project"
+  },
+  {
+    "word": "N8N",
+    "clue": "Automation system you use"
+  },
+  {
+    "word": "EIGHTSLEEP",
+    "clue": "Device integrated into your home setup"
+  },
+  {
+    "word": "CASAOS",
+    "clue": "Platform for your home server"
+  },
+  {
+    "word": "RTLSDR",
+    "clue": "Your way of exploring radio signals"
+  },
+  {
+    "word": "GQRX",
+    "clue": "Your main SDR app"
+  },
+  {
+    "word": "BANJO",
+    "clue": "Only part of country music you tolerate"
+  },
+  {
+    "word": "CURVES",
+    "clue": "Your hair situation every morning"
+  },
+  {
+    "word": "BOURBON",
+    "clue": "Your occasional evening drink"
+  },
+  {
+    "word": "PACIFICO",
+    "clue": "Beer you keep around"
+  },
+  {
+    "word": "INSOMNIA",
+    "clue": "Long-running issue you deal with"
+  },
+  {
+    "word": "PRIDE",
+    "clue": "Local event you’ve enjoyed"
+  },
+  {
+    "word": "MEDITATION",
+    "clue": "Practice tied to your philosophy interests"
+  },
+  {
+    "word": "NONDUALITY",
+    "clue": "Concept you reflect on often"
+  },
+  {
+    "word": "MEDSCHOOL",
+    "clue": "Her current world"
+  },
+  {
+    "word": "STUDY",
+    "clue": "Where much of her time goes"
+  },
+  {
+    "word": "HOSPITAL",
+    "clue": "Her future workplace"
+  },
+  {
+    "word": "SCRUBS",
+    "clue": "Her daily uniform soon"
+  },
+  {
+    "word": "ICECREAM",
+    "clue": "Her nightly ritual"
+  },
+  {
+    "word": "SOUP",
+    "clue": "Comfort food she makes"
+  },
+  {
+    "word": "COOKING",
+    "clue": "Shared activity you both enjoy"
+  },
+  {
+    "word": "STEAK",
+    "clue": "A dinner you make together"
+  },
+  {
+    "word": "SNORKEL",
+    "clue": "What she can safely do in the water"
+  },
+  {
+    "word": "ICELAND",
+    "clue": "Trip you took together"
+  },
+  {
+    "word": "HIKING",
+    "clue": "Outdoor thing she enjoys with you"
+  },
+  {
+    "word": "SEATTLE",
+    "clue": "Her home with you"
+  },
+  {
+    "word": "LAKEUNION",
+    "clue": "View she sees from the porch"
+  },
+  {
+    "word": "MOVIES",
+    "clue": "Evening activity you two share"
+  },
+  {
+    "word": "TALKS",
+    "clue": "Your best nightly routine"
+  },
+  {
+    "word": "THERAPY",
+    "clue": "Something you’re navigating together"
+  },
+  {
+    "word": "MEDICINE",
+    "clue": "Field she’s training in"
+  },
+  {
+    "word": "ANATOMY",
+    "clue": "A big part of her studies"
+  },
+  {
+    "word": "PHYSIOLOGY",
+    "clue": "Core subject she works through"
+  },
+  {
+    "word": "BIOCHEM",
+    "clue": "Another part of med school life"
+  },
+  {
+    "word": "IDAHO",
+    "clue": "Where your mom lives and she’s visited"
+  },
+  {
+    "word": "ADVENTURE",
+    "clue": "Tone of your shared trips"
+  },
+  {
+    "word": "REST",
+    "clue": "Something she rarely gets enough of"
+  },
+  {
+    "word": "BALANCE",
+    "clue": "Big challenge during med school"
+  },
+  {
+    "word": "BRAVERY",
+    "clue": "Quality she shows in her path"
+  },
+  {
+    "word": "CARE",
+    "clue": "What she brings into relationships"
+  },
+  {
+    "word": "FOCUS",
+    "clue": "She needs it for long study blocks"
+  },
+  {
+    "word": "SOFTNESS",
+    "clue": "Energy she brings into the home"
+  },
+  {
+    "word": "SUPPORT",
+    "clue": "What you give each other"
+  },
+  {
+    "word": "DINNER",
+    "clue": "Your shared nightly anchor"
+  },
+  {
+    "word": "CUDDLES",
+    "clue": "Warm part of the nights"
+  },
+  {
+    "word": "CURLYHAIR",
+    "clue": "What she deals with on you"
+  },
+  {
+    "word": "PLAYLISTS",
+    "clue": "Sometimes part of your evenings"
+  },
+  {
+    "word": "PEACE",
+    "clue": "What she brings into the room"
+  },
+  {
+    "word": "KINDNESS",
+    "clue": "Core trait of hers"
+  },
+  {
+    "word": "RESILIENCE",
+    "clue": "Required for everything she’s doing"
+  },
+  {
+    "word": "PARTNER",
+    "clue": "Her role in your life"
+  },
+  {
+    "word": "HOME",
+    "clue": "What the two of you create together"
+  },
+  {
+    "word": "FUTURE",
+    "clue": "What you’re both building"
+  }
+]

@@ -188,40 +188,104 @@ function determineGridSize(words) {
 }
 
 function buildCrossword(entries, gridSize) {
-  const maxAttempts = 60;
-  let lastError = "Unable to place all words.";
+  const maxAttempts = 80;
+  let bestLayout = null;
+  let bestScore = -Infinity;
+  let successCount = 0;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const grid = createEmptyGrid(gridSize);
-    const placements = [];
-    const attemptWords = shuffle([...entries]);
-    let success = true;
-
-    for (const entry of attemptWords) {
-      const placement = placeWord(entry, grid, placements);
-      if (!placement) {
-        success = false;
-        break;
-      }
-      placements.push(placement);
+    const layout = attemptLayout(entries, gridSize);
+    if (!layout) {
+      continue;
     }
 
-    if (success) {
-      const trimmed = trimLayout(grid, placements);
-      const numbering = assignNumbers(trimmed.grid, trimmed.placements);
-      return {
-        grid: trimmed.grid,
-        placements: numbering.placements,
-        numbersMap: numbering.numbersMap,
-        acrossClues: numbering.acrossClues,
-        downClues: numbering.downClues,
-      };
-    } else {
-      lastError = "Unable to place every word. Try fewer words or a different set.";
+    successCount += 1;
+    const score = scoreLayout(layout);
+    if (score > bestScore) {
+      bestScore = score;
+      bestLayout = layout;
+      if (score >= 0.85) {
+        break;
+      }
     }
   }
 
-  throw new Error(lastError);
+  if (bestLayout) {
+    return bestLayout;
+  }
+
+  if (successCount === 0) {
+    throw new Error("Unable to place every word. Try fewer words or a different set.");
+  }
+
+  throw new Error("Unable to find a compact layout. Generate again or reduce the word count.");
+}
+
+function attemptLayout(entries, gridSize) {
+  const grid = createEmptyGrid(gridSize);
+  const placements = [];
+  const attemptWords = shuffle([...entries]);
+
+  for (const entry of attemptWords) {
+    const placement = placeWord(entry, grid, placements);
+    if (!placement) {
+      return null;
+    }
+    placements.push(placement);
+  }
+
+  const trimmed = trimLayout(grid, placements);
+  const numbering = assignNumbers(trimmed.grid, trimmed.placements);
+  return {
+    grid: trimmed.grid,
+    placements: numbering.placements,
+    numbersMap: numbering.numbersMap,
+    acrossClues: numbering.acrossClues,
+    downClues: numbering.downClues,
+  };
+}
+
+function scoreLayout(layout) {
+  const rows = layout.grid.length;
+  const cols = layout.grid[0]?.length || 0;
+  if (rows === 0 || cols === 0) {
+    return 0;
+  }
+
+  let filled = 0;
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      if (layout.grid[row][col]) {
+        filled += 1;
+      }
+    }
+  }
+
+  const coverageScore = filled / (rows * cols);
+  const intersectionBonus = countIntersections(layout.placements) * 0.02;
+  return coverageScore + intersectionBonus;
+}
+
+function countIntersections(placements) {
+  const usage = new Map();
+
+  placements.forEach((placement) => {
+    const deltaRow = placement.direction === "down" ? 1 : 0;
+    const deltaCol = placement.direction === "across" ? 1 : 0;
+    for (let i = 0; i < placement.word.length; i += 1) {
+      const key = `${placement.row + deltaRow * i}:${placement.col + deltaCol * i}`;
+      usage.set(key, (usage.get(key) || 0) + 1);
+    }
+  });
+
+  let intersections = 0;
+  usage.forEach((count) => {
+    if (count > 1) {
+      intersections += 1;
+    }
+  });
+
+  return intersections;
 }
 
 function createEmptyGrid(size) {
