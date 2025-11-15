@@ -306,6 +306,7 @@ function buildCrossword(entries, gridSize) {
 
 function attemptLayout(entries, gridSize) {
   const grid = createEmptyGrid(gridSize);
+  const usage = createUsageGrid(gridSize);
   const overlapMatrix = buildOverlapMatrix(entries);
   const overlapTotals = calculateOverlapTotals(entries.length, overlapMatrix);
   const placements = [];
@@ -319,7 +320,7 @@ function attemptLayout(entries, gridSize) {
 
   const centerRow = Math.floor(gridSize / 2);
   const centerCol = Math.max(0, Math.floor((gridSize - initialEntry.word.length) / 2));
-  if (!canPlace(initialEntry.word, centerRow, centerCol, "across", grid)) {
+  if (!canPlace(initialEntry.word, centerRow, centerCol, "across", grid, usage)) {
     return null;
   }
 
@@ -330,11 +331,12 @@ function attemptLayout(entries, gridSize) {
     centerCol,
     "across",
     grid,
+    usage,
   );
   placements.push(firstPlacement);
   used.add(initialIndex);
 
-  if (!backtrackPlace(grid, placements, entries, used, overlapMatrix, overlapTotals)) {
+  if (!backtrackPlace(grid, usage, placements, entries, used, overlapMatrix, overlapTotals)) {
     return null;
   }
 
@@ -403,7 +405,7 @@ function selectInitialEntryIndex(entries, overlapTotals) {
   return bestIndex;
 }
 
-function backtrackPlace(grid, placements, entries, used, overlapMatrix, overlapTotals) {
+function backtrackPlace(grid, usage, placements, entries, used, overlapMatrix, overlapTotals) {
   if (placements.length === entries.length) {
     return true;
   }
@@ -412,28 +414,29 @@ function backtrackPlace(grid, placements, entries, used, overlapMatrix, overlapT
   for (const candidate of nextEntries) {
     const options = generatePlacementOptions(candidate, placements, overlapMatrix);
     for (const option of options) {
-      if (!canPlace(candidate.entry.word, option.row, option.col, option.direction, grid)) {
+      if (!canPlace(candidate.entry.word, option.row, option.col, option.direction, grid, usage)) {
         continue;
       }
 
-      const { placement, filledCells } = applyPlacement(
+      const { placement, filledCells, usageUpdates } = applyPlacement(
         candidate.entry,
         candidate.index,
         option.row,
         option.col,
         option.direction,
         grid,
+        usage,
       );
       placements.push(placement);
       used.add(candidate.index);
 
-      if (backtrackPlace(grid, placements, entries, used, overlapMatrix, overlapTotals)) {
+      if (backtrackPlace(grid, usage, placements, entries, used, overlapMatrix, overlapTotals)) {
         return true;
       }
 
       placements.pop();
       used.delete(candidate.index);
-      revertPlacement(grid, filledCells);
+      revertPlacement(grid, usage, filledCells, usageUpdates);
     }
   }
 
@@ -505,18 +508,22 @@ function generatePlacementOptions(candidate, placements, overlapMatrix) {
   return options;
 }
 
-function applyPlacement(entry, entryIndex, row, col, direction, grid) {
+function applyPlacement(entry, entryIndex, row, col, direction, grid, usage) {
   const deltaRow = direction === "down" ? 1 : 0;
   const deltaCol = direction === "across" ? 1 : 0;
   const filledCells = [];
+  const usageKey = direction === "across" ? "across" : "down";
+  const usageUpdates = [];
 
   for (let i = 0; i < entry.word.length; i += 1) {
     const currentRow = row + deltaRow * i;
     const currentCol = col + deltaCol * i;
     if (!grid[currentRow][currentCol]) {
       filledCells.push({ row: currentRow, col: currentCol });
+      grid[currentRow][currentCol] = entry.word[i];
     }
-    grid[currentRow][currentCol] = entry.word[i];
+    usage[currentRow][currentCol][usageKey] = true;
+    usageUpdates.push({ row: currentRow, col: currentCol, key: usageKey });
   }
 
   return {
@@ -529,12 +536,21 @@ function applyPlacement(entry, entryIndex, row, col, direction, grid) {
       entryIndex,
     },
     filledCells,
+    usageUpdates,
   };
 }
 
-function revertPlacement(grid, filledCells) {
+function revertPlacement(grid, usage, filledCells, usageUpdates) {
+  usageUpdates.forEach(({ row, col, key }) => {
+    usage[row][col][key] = false;
+    if (!usage[row][col].across && !usage[row][col].down) {
+      grid[row][col] = null;
+    }
+  });
   filledCells.forEach((cell) => {
-    grid[cell.row][cell.col] = null;
+    if (!usage[cell.row][cell.col].across && !usage[cell.row][cell.col].down) {
+      grid[cell.row][cell.col] = null;
+    }
   });
 }
 
@@ -585,7 +601,13 @@ function createEmptyGrid(size) {
   return Array.from({ length: size }, () => Array(size).fill(null));
 }
 
-function canPlace(word, row, col, direction, grid) {
+function createUsageGrid(size) {
+  return Array.from({ length: size }, () =>
+    Array.from({ length: size }, () => ({ across: false, down: false })),
+  );
+}
+
+function canPlace(word, row, col, direction, grid, usage) {
   const size = grid.length;
   const deltaRow = direction === "down" ? 1 : 0;
   const deltaCol = direction === "across" ? 1 : 0;
@@ -615,6 +637,44 @@ function canPlace(word, row, col, direction, grid) {
 
     if (existing && existing !== word[i]) {
       return false;
+    }
+
+    if (!existing) {
+      if (direction === "across") {
+        const aboveRow = currentRow - 1;
+        const belowRow = currentRow + 1;
+        if (
+          isInsideGrid(aboveRow, currentCol, size) &&
+          grid[aboveRow][currentCol] &&
+          !usage[aboveRow][currentCol].down
+        ) {
+          return false;
+        }
+        if (
+          isInsideGrid(belowRow, currentCol, size) &&
+          grid[belowRow][currentCol] &&
+          !usage[belowRow][currentCol].down
+        ) {
+          return false;
+        }
+      } else {
+        const leftCol = currentCol - 1;
+        const rightCol = currentCol + 1;
+        if (
+          isInsideGrid(currentRow, leftCol, size) &&
+          grid[currentRow][leftCol] &&
+          !usage[currentRow][leftCol].across
+        ) {
+          return false;
+        }
+        if (
+          isInsideGrid(currentRow, rightCol, size) &&
+          grid[currentRow][rightCol] &&
+          !usage[currentRow][rightCol].across
+        ) {
+          return false;
+        }
+      }
     }
   }
 
