@@ -37,6 +37,7 @@ export default function App() {
   const [theme, setTheme] = useState(getInitialTheme);
   const [respectSystem, setRespectSystem] = useState(() => !getStoredTheme());
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationSteps, setGenerationSteps] = useState([]);
   const workerRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -102,7 +103,17 @@ export default function App() {
 
     worker.onmessage = (event) => {
       const { type, puzzle: puzzleData, message } = event.data || {};
+
+      if (type === "progress" && message) {
+        setGenerationSteps((prev) => {
+          const next = [...prev, message];
+          return next.slice(-5);
+        });
+        return;
+      }
+
       setIsGenerating(false);
+      setGenerationSteps([]);
 
       if (type === "success" && puzzleData) {
         setPuzzle(puzzleData);
@@ -119,6 +130,7 @@ export default function App() {
 
     worker.onerror = () => {
       setIsGenerating(false);
+      setGenerationSteps([]);
       setStatus("Generation failed due to an unexpected error.");
       setStatusError(true);
     };
@@ -168,6 +180,7 @@ export default function App() {
     setStatus("Generating crossword...");
     setStatusError(false);
     setShowAnswers(false);
+    setGenerationSteps(["Starting puzzle generation…"]);
     workerRef.current.postMessage({ entries, wordCount });
   };
 
@@ -352,7 +365,7 @@ export default function App() {
 
       <section className="card puzzle" aria-live="polite">
         <div id="gridWrapper" aria-busy={isGenerating}>
-          {isGenerating ? <LoadingState /> : null}
+          {isGenerating ? <LoadingState steps={generationSteps} /> : null}
           {puzzle ? (
             <CrosswordGrid
               grid={puzzle.grid}
@@ -456,11 +469,20 @@ function EmptyState() {
   );
 }
 
-function LoadingState() {
+function LoadingState({ steps }) {
   return (
     <div className="generation-indicator" role="status" aria-live="polite">
       <span className="spinner" aria-hidden="true" />
-      Generating puzzle…
+      <div>
+        <p className="generation-title">Generating puzzle…</p>
+        {steps?.length ? (
+          <ul className="generation-steps">
+            {steps.map((step, index) => (
+              <li key={`${step}-${index}`}>{step}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </div>
   );
 }

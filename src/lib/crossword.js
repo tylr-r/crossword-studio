@@ -52,7 +52,10 @@ export function normalizeEntries(raw) {
   return entries;
 }
 
-export function createPuzzle(entries, requestedCount) {
+export function createPuzzle(entries, requestedCount, options = {}) {
+  const { onProgress } = options;
+  const report = typeof onProgress === "function" ? onProgress : () => {};
+
   if (!Array.isArray(entries) || entries.length === 0) {
     throw new Error("Load a JSON file before generating a crossword.");
   }
@@ -65,9 +68,12 @@ export function createPuzzle(entries, requestedCount) {
     throw new Error("Not enough words available for that grid size.");
   }
 
+  report(`Selecting ${requestedCount} random entries from ${entries.length} options…`);
   const words = pickRandomEntries(entries, requestedCount);
   const gridSize = determineGridSize(words);
-  const layout = buildCrossword(words, gridSize);
+  report(`Target grid size: ${gridSize}×${gridSize}. Building layout…`);
+  const layout = buildCrossword(words, gridSize, report);
+  report("Layout complete.");
 
   return {
     ...layout,
@@ -96,13 +102,14 @@ function determineGridSize(words) {
   return Math.max(MIN_GRID_SIZE, Math.min(MAX_GRID_SIZE, roughSize));
 }
 
-function buildCrossword(entries, gridSize) {
+function buildCrossword(entries, gridSize, report = () => {}) {
   const maxAttempts = 80;
   let bestLayout = null;
   let bestScore = -Infinity;
   let successCount = 0;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    report(`Layout attempt ${attempt + 1} of ${maxAttempts}`);
     const layout = attemptLayout(entries, gridSize);
     if (!layout) {
       continue;
@@ -111,9 +118,11 @@ function buildCrossword(entries, gridSize) {
     successCount += 1;
     const score = scoreLayout(layout);
     if (score > bestScore) {
+      report(`Better layout found (score ${(score * 100).toFixed(0)}%).`);
       bestScore = score;
       bestLayout = layout;
       if (score >= 0.85) {
+        report("High-quality layout achieved. Stopping early.");
         break;
       }
     }

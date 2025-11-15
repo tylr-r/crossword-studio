@@ -333,6 +333,27 @@ button:disabled {
   color: var(--text-primary);
 }
 
+.generation-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.generation-steps {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+:root[data-theme="light"] .generation-steps {
+  color: var(--text-muted);
+}
+
+.generation-steps li {
+  margin-bottom: 0.15rem;
+}
+
 .spinner {
   width: 1.1rem;
   height: 1.1rem;
