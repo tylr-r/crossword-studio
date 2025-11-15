@@ -306,15 +306,36 @@ function buildCrossword(entries, gridSize) {
 
 function attemptLayout(entries, gridSize) {
   const grid = createEmptyGrid(gridSize);
+  const overlapMatrix = buildOverlapMatrix(entries);
+  const overlapTotals = calculateOverlapTotals(entries.length, overlapMatrix);
   const placements = [];
-  const attemptWords = shuffle([...entries]);
+  const used = new Set();
 
-  for (const entry of attemptWords) {
-    const placement = placeWord(entry, grid, placements);
-    if (!placement) {
-      return null;
-    }
-    placements.push(placement);
+  const initialIndex = selectInitialEntryIndex(entries, overlapTotals);
+  const initialEntry = entries[initialIndex];
+  if (!initialEntry || !initialEntry.word) {
+    return null;
+  }
+
+  const centerRow = Math.floor(gridSize / 2);
+  const centerCol = Math.max(0, Math.floor((gridSize - initialEntry.word.length) / 2));
+  if (!canPlace(initialEntry.word, centerRow, centerCol, "across", grid)) {
+    return null;
+  }
+
+  const { placement: firstPlacement } = applyPlacement(
+    initialEntry,
+    initialIndex,
+    centerRow,
+    centerCol,
+    "across",
+    grid,
+  );
+  placements.push(firstPlacement);
+  used.add(initialIndex);
+
+  if (!backtrackPlace(grid, placements, entries, used, overlapMatrix, overlapTotals)) {
+    return null;
   }
 
   const trimmed = trimLayout(grid, placements);
@@ -326,6 +347,195 @@ function attemptLayout(entries, gridSize) {
     acrossClues: numbering.acrossClues,
     downClues: numbering.downClues,
   };
+}
+
+function buildOverlapMatrix(entries) {
+  const matrix = new Map();
+  for (let i = 0; i < entries.length; i += 1) {
+    for (let j = 0; j < entries.length; j += 1) {
+      if (i === j) continue;
+      const key = `${i}:${j}`;
+      matrix.set(key, computeLetterOverlaps(entries[i].word, entries[j].word));
+    }
+  }
+  return matrix;
+}
+
+function computeLetterOverlaps(wordA = "", wordB = "") {
+  const overlaps = [];
+  for (let i = 0; i < wordA.length; i += 1) {
+    for (let j = 0; j < wordB.length; j += 1) {
+      if (wordA[i] === wordB[j]) {
+        overlaps.push({ aIndex: i, bIndex: j });
+      }
+    }
+  }
+  return overlaps;
+}
+
+function calculateOverlapTotals(count, matrix) {
+  return Array.from({ length: count }, (_, index) => {
+    let total = 0;
+    for (let j = 0; j < count; j += 1) {
+      if (index === j) continue;
+      const overlaps = matrix.get(`${index}:${j}`);
+      if (overlaps) {
+        total += overlaps.length;
+      }
+    }
+    return total;
+  });
+}
+
+function selectInitialEntryIndex(entries, overlapTotals) {
+  let bestIndex = 0;
+  let bestScore = -Infinity;
+  for (let i = 0; i < entries.length; i += 1) {
+    const score = overlapTotals[i] ?? 0;
+    if (
+      score > bestScore ||
+      (score === bestScore && entries[i].word.length > entries[bestIndex].word.length)
+    ) {
+      bestIndex = i;
+      bestScore = score;
+    }
+  }
+  return bestIndex;
+}
+
+function backtrackPlace(grid, placements, entries, used, overlapMatrix, overlapTotals) {
+  if (placements.length === entries.length) {
+    return true;
+  }
+
+  const nextEntries = selectNextEntries(entries, used, placements, overlapMatrix, overlapTotals);
+  for (const candidate of nextEntries) {
+    const options = generatePlacementOptions(candidate, placements, overlapMatrix);
+    for (const option of options) {
+      if (!canPlace(candidate.entry.word, option.row, option.col, option.direction, grid)) {
+        continue;
+      }
+
+      const { placement, filledCells } = applyPlacement(
+        candidate.entry,
+        candidate.index,
+        option.row,
+        option.col,
+        option.direction,
+        grid,
+      );
+      placements.push(placement);
+      used.add(candidate.index);
+
+      if (backtrackPlace(grid, placements, entries, used, overlapMatrix, overlapTotals)) {
+        return true;
+      }
+
+      placements.pop();
+      used.delete(candidate.index);
+      revertPlacement(grid, filledCells);
+    }
+  }
+
+  return false;
+}
+
+function selectNextEntries(entries, used, placements, overlapMatrix, overlapTotals) {
+  const candidates = [];
+
+  entries.forEach((entry, index) => {
+    if (used.has(index)) return;
+    const overlapScore = placements.reduce((score, placement) => {
+      const overlaps = overlapMatrix.get(`${index}:${placement.entryIndex}`) || [];
+      return score + overlaps.length;
+    }, 0);
+
+    if (overlapScore === 0) {
+      return;
+    }
+
+    candidates.push({
+      entry,
+      index,
+      overlapScore,
+      potential: overlapTotals[index] ?? 0,
+    });
+  });
+
+  candidates.sort((a, b) => {
+    if (b.overlapScore !== a.overlapScore) {
+      return b.overlapScore - a.overlapScore;
+    }
+    if (b.potential !== a.potential) {
+      return b.potential - a.potential;
+    }
+    return b.entry.word.length - a.entry.word.length;
+  });
+
+  return candidates;
+}
+
+function generatePlacementOptions(candidate, placements, overlapMatrix) {
+  const options = [];
+  const seen = new Set();
+
+  placements.forEach((placement) => {
+    const overlaps = overlapMatrix.get(`${candidate.index}:${placement.entryIndex}`) || [];
+    overlaps.forEach(({ aIndex, bIndex }) => {
+      let row;
+      let col;
+      let direction;
+      if (placement.direction === "across") {
+        direction = "down";
+        row = placement.row - aIndex;
+        col = placement.col + bIndex;
+      } else {
+        direction = "across";
+        row = placement.row + bIndex;
+        col = placement.col - aIndex;
+      }
+      const key = `${row}:${col}:${direction}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        options.push({ row, col, direction });
+      }
+    });
+  });
+
+  return options;
+}
+
+function applyPlacement(entry, entryIndex, row, col, direction, grid) {
+  const deltaRow = direction === "down" ? 1 : 0;
+  const deltaCol = direction === "across" ? 1 : 0;
+  const filledCells = [];
+
+  for (let i = 0; i < entry.word.length; i += 1) {
+    const currentRow = row + deltaRow * i;
+    const currentCol = col + deltaCol * i;
+    if (!grid[currentRow][currentCol]) {
+      filledCells.push({ row: currentRow, col: currentCol });
+    }
+    grid[currentRow][currentCol] = entry.word[i];
+  }
+
+  return {
+    placement: {
+      word: entry.word,
+      clue: entry.clue,
+      row,
+      col,
+      direction,
+      entryIndex,
+    },
+    filledCells,
+  };
+}
+
+function revertPlacement(grid, filledCells) {
+  filledCells.forEach((cell) => {
+    grid[cell.row][cell.col] = null;
+  });
 }
 
 function scoreLayout(layout) {
@@ -375,75 +585,6 @@ function createEmptyGrid(size) {
   return Array.from({ length: size }, () => Array(size).fill(null));
 }
 
-function placeWord(entry, grid, placements) {
-  if (!entry.word) return null;
-
-  if (placements.length === 0) {
-    const row = Math.floor(grid.length / 2);
-    const col = Math.max(0, Math.floor((grid[0].length - entry.word.length) / 2));
-    if (canPlace(entry.word, row, col, "across", grid)) {
-      return commitPlacement(entry, row, col, "across", grid);
-    }
-  }
-
-  const intersectionCandidates = collectIntersectionCandidates(entry.word, placements);
-  for (const candidate of intersectionCandidates) {
-    if (canPlace(entry.word, candidate.row, candidate.col, candidate.direction, grid)) {
-      return commitPlacement(entry, candidate.row, candidate.col, candidate.direction, grid);
-    }
-  }
-
-  const fallback = findFallbackPosition(entry.word, grid);
-  if (fallback) {
-    return commitPlacement(entry, fallback.row, fallback.col, fallback.direction, grid);
-  }
-
-  return null;
-}
-
-function collectIntersectionCandidates(word, placements) {
-  const candidates = [];
-
-  placements.forEach((placed) => {
-    for (let i = 0; i < word.length; i += 1) {
-      const currentLetter = word[i];
-      for (let j = 0; j < placed.word.length; j += 1) {
-        if (placed.word[j] !== currentLetter) continue;
-        if (placed.direction === "across") {
-          candidates.push({
-            row: placed.row + j - i,
-            col: placed.col + j,
-            direction: "down",
-          });
-        } else {
-          candidates.push({
-            row: placed.row + j,
-            col: placed.col + j - i,
-            direction: "across",
-          });
-        }
-      }
-    }
-  });
-
-  return shuffle(candidates);
-}
-
-function findFallbackPosition(word, grid) {
-  const size = grid.length;
-  for (let row = 0; row < size; row += 1) {
-    for (let col = 0; col < size; col += 1) {
-      if (canPlace(word, row, col, "across", grid)) {
-        return { row, col, direction: "across" };
-      }
-      if (canPlace(word, row, col, "down", grid)) {
-        return { row, col, direction: "down" };
-      }
-    }
-  }
-  return null;
-}
-
 function canPlace(word, row, col, direction, grid) {
   const size = grid.length;
   const deltaRow = direction === "down" ? 1 : 0;
@@ -482,25 +623,6 @@ function canPlace(word, row, col, direction, grid) {
 
 function isInsideGrid(row, col, size) {
   return row >= 0 && col >= 0 && row < size && col < size;
-}
-
-function commitPlacement(entry, row, col, direction, grid) {
-  const deltaRow = direction === "down" ? 1 : 0;
-  const deltaCol = direction === "across" ? 1 : 0;
-
-  for (let i = 0; i < entry.word.length; i += 1) {
-    const currentRow = row + deltaRow * i;
-    const currentCol = col + deltaCol * i;
-    grid[currentRow][currentCol] = entry.word[i];
-  }
-
-  return {
-    word: entry.word,
-    clue: entry.clue,
-    row,
-    col,
-    direction,
-  };
 }
 
 function trimLayout(grid, placements) {
