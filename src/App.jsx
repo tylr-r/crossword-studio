@@ -106,6 +106,10 @@ export default function App() {
 
       if (type === "progress" && message) {
         setGenerationSteps((prev) => {
+          const lastStep = prev[prev.length - 1];
+          if (lastStep === message) {
+            return prev;
+          }
           const next = [...prev, message];
           return next.slice(-5);
         });
@@ -494,17 +498,21 @@ function EmptyState() {
 }
 
 function LoadingState({ steps }) {
+  const hasSteps = Boolean(steps?.length);
+  const showList = hasSteps && steps.length > 1;
   return (
     <div className="generation-indicator" role="status" aria-live="polite">
       <span className="spinner" aria-hidden="true" />
       <div>
         <p className="generation-title">Generating puzzle…</p>
-        {steps?.length ? (
+        {showList ? (
           <ul className="generation-steps">
             {steps.map((step, index) => (
               <li key={`${step}-${index}`}>{step}</li>
             ))}
           </ul>
+        ) : hasSteps ? (
+          <p className="generation-single">{steps[0]}</p>
         ) : null}
       </div>
     </div>

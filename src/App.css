@@ -354,6 +354,16 @@ button:disabled {
   margin-bottom: 0.15rem;
 }
 
+.generation-single {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+:root[data-theme="light"] .generation-single {
+  color: var(--text-muted);
+}
+
 .spinner {
   width: 1.1rem;
   height: 1.1rem;
