@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { jsPDF } from "jspdf";
 import "./App.css";
-import { createPuzzle, normalizeEntries, MAX_WORDS, MIN_WORDS } from "./lib/crossword";
+import { normalizeEntries, MAX_WORDS, MIN_WORDS } from "./lib/crossword";
 
 const THEME_STORAGE_KEY = "crossword-theme";
 
@@ -37,6 +36,8 @@ export default function App() {
   const [cellValues, setCellValues] = useState({});
   const [theme, setTheme] = useState(getInitialTheme);
   const [respectSystem, setRespectSystem] = useState(() => !getStoredTheme());
+  const [isGenerating, setIsGenerating] = useState(false);
+  const workerRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const sliderEnabled = entries.length >= MIN_WORDS;
@@ -93,6 +94,40 @@ export default function App() {
     setCellValues({});
   }, [puzzle]);
 
+  useEffect(() => {
+    const worker = new Worker(new URL("./workers/crosswordWorker.js", import.meta.url), {
+      type: "module",
+    });
+    workerRef.current = worker;
+
+    worker.onmessage = (event) => {
+      const { type, puzzle: puzzleData, message } = event.data || {};
+      setIsGenerating(false);
+
+      if (type === "success" && puzzleData) {
+        setPuzzle(puzzleData);
+        setShowAnswers(false);
+        setStatus(
+          `Crossword generated with ${puzzleData.requestedCount} words on a ${puzzleData.rows}×${puzzleData.cols} grid.`,
+        );
+        setStatusError(false);
+      } else {
+        setStatus(message || "Unable to generate crossword.");
+        setStatusError(true);
+      }
+    };
+
+    worker.onerror = () => {
+      setIsGenerating(false);
+      setStatus("Generation failed due to an unexpected error.");
+      setStatusError(true);
+    };
+
+    return () => {
+      worker.terminate();
+    };
+  }, []);
+
   const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -124,71 +159,86 @@ export default function App() {
   };
 
   const handleGenerate = () => {
-    try {
-      const puzzleData = createPuzzle(entries, wordCount);
-      setPuzzle(puzzleData);
-      setShowAnswers(false);
-      setCellValues({});
-      setStatus(
-        `Crossword generated with ${puzzleData.requestedCount} words on a ${puzzleData.rows}×${puzzleData.cols} grid.`,
-      );
-      setStatusError(false);
-    } catch (error) {
-      setStatus(error.message || "Unable to generate crossword.");
+    if (!workerRef.current) {
+      setStatus("Puzzle generator not ready. Please try again.");
       setStatusError(true);
+      return;
     }
+    setIsGenerating(true);
+    setStatus("Generating crossword...");
+    setStatusError(false);
+    setShowAnswers(false);
+    workerRef.current.postMessage({ entries, wordCount });
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     if (!puzzle) {
       setStatus("Generate a crossword before exporting.");
       setStatusError(true);
       return;
     }
 
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
+    try {
+      setStatus("Preparing PDF...");
+      setStatusError(false);
+      const { jsPDF } = await import("jspdf");
 
-    const margin = 12;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const rows = puzzle.grid.length;
-    const cols = puzzle.grid[0]?.length || 0;
-    if (cols === 0) {
-      setStatus("No grid data available to export.");
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const margin = 12;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const rows = puzzle.grid.length;
+      const cols = puzzle.grid[0]?.length || 0;
+      if (cols === 0) {
+        setStatus("No grid data available to export.");
+        setStatusError(true);
+        return;
+      }
+
+      const cellSize = Math.min(10, (pageWidth - margin * 2) / cols);
+      const gridWidth = cellSize * cols;
+      const startX = (pageWidth - gridWidth) / 2;
+      let currentY = margin + 2;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Crossword Puzzle", margin, currentY);
+      currentY += 6;
+
+      drawGridOnPdf(doc, puzzle, startX, currentY, cellSize);
+      currentY += rows * cellSize + 8;
+
+      doc.setFontSize(12);
+      const afterAcross = writeClueSection(
+        doc,
+        "Across",
+        puzzle.acrossClues,
+        margin,
+        pageWidth,
+        pageHeight,
+        currentY,
+      );
+      writeClueSection(
+        doc,
+        "Down",
+        puzzle.downClues,
+        margin,
+        pageWidth,
+        pageHeight,
+        afterAcross + 2,
+      );
+
+      doc.save("crossword.pdf");
+      setStatus("PDF downloaded.");
+    } catch (error) {
+      setStatus(error?.message || "Unable to prepare PDF.");
       setStatusError(true);
-      return;
     }
-
-    const cellSize = Math.min(10, (pageWidth - margin * 2) / cols);
-    const gridWidth = cellSize * cols;
-    const startX = (pageWidth - gridWidth) / 2;
-    let currentY = margin + 2;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("Crossword Puzzle", margin, currentY);
-    currentY += 6;
-
-    drawGridOnPdf(doc, puzzle, startX, currentY, cellSize);
-    currentY += rows * cellSize + 8;
-
-    doc.setFontSize(12);
-    const afterAcross = writeClueSection(
-      doc,
-      "Across",
-      puzzle.acrossClues,
-      margin,
-      pageWidth,
-      pageHeight,
-      currentY,
-    );
-    writeClueSection(doc, "Down", puzzle.downClues, margin, pageWidth, pageHeight, afterAcross + 2);
-
-    doc.save("crossword.pdf");
   };
 
   const toggleTheme = () => {
@@ -276,10 +326,20 @@ export default function App() {
         </div>
 
         <div className="actions">
-          <button type="button" disabled={!canGenerate} onClick={handleGenerate}>
-            Generate Crossword
+          <button
+            type="button"
+            disabled={!canGenerate || isGenerating}
+            onClick={handleGenerate}
+            aria-busy={isGenerating}
+          >
+            {isGenerating ? "Generating..." : "Generate Crossword"}
           </button>
-          <button type="button" disabled={!canDownloadPdf} onClick={handleDownloadPdf}>
+          <button
+            type="button"
+            className="download-btn"
+            disabled={!canDownloadPdf || isGenerating}
+            onClick={handleDownloadPdf}
+          >
             Download PDF
           </button>
         </div>
@@ -291,7 +351,8 @@ export default function App() {
       </section>
 
       <section className="card puzzle" aria-live="polite">
-        <div id="gridWrapper">
+        <div id="gridWrapper" aria-busy={isGenerating}>
+          {isGenerating ? <LoadingState /> : null}
           {puzzle ? (
             <CrosswordGrid
               grid={puzzle.grid}
@@ -391,6 +452,15 @@ function EmptyState() {
   return (
     <div className="empty-state">
       <p>Load a JSON file to generate your crossword.</p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="generation-indicator" role="status" aria-live="polite">
+      <span className="spinner" aria-hidden="true" />
+      Generating puzzle…
     </div>
   );
 }
