@@ -8,10 +8,22 @@ const showAnswersToggle = document.getElementById("showAnswers");
 const gridElement = document.getElementById("crosswordGrid");
 const acrossList = document.getElementById("acrossList");
 const downList = document.getElementById("downList");
+const themeToggleBtn = document.getElementById("themeToggle");
+const rootElement = document.documentElement;
+
+const THEME_STORAGE_KEY = "crossword-theme";
+const prefersDarkQuery =
+  typeof window !== "undefined" && window.matchMedia
+    ? window.matchMedia("(prefers-color-scheme: dark)")
+    : null;
+
+let respectSystemPreference = true;
 
 let availableEntries = [];
 let puzzleState = null;
 let revealAnswers = false;
+
+initializeTheme();
 
 fileInput.addEventListener("change", handleFileSelection);
 wordCountInput.addEventListener("input", () => {
@@ -28,10 +40,81 @@ pdfBtn.addEventListener("click", handlePdfDownload);
 showAnswersToggle.addEventListener("change", () => {
   revealAnswers = showAnswersToggle.checked;
   gridElement.classList.toggle("reveal", revealAnswers);
-  if (puzzleState) {
-    renderGrid(puzzleState.grid, puzzleState.numbersMap);
-  }
+  applyRevealStateToInputs();
 });
+
+function initializeTheme() {
+  if (!themeToggleBtn) {
+    return;
+  }
+
+  let storedTheme = null;
+  try {
+    storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+  } catch (_) {
+    storedTheme = null;
+  }
+
+  respectSystemPreference = !storedTheme;
+  const initialTheme =
+    storedTheme || (prefersDarkQuery && prefersDarkQuery.matches ? "dark" : "light");
+  applyTheme(initialTheme, { persist: Boolean(storedTheme) });
+
+  themeToggleBtn.addEventListener("click", () => {
+    const nextTheme = rootElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    applyTheme(nextTheme);
+  });
+
+  if (prefersDarkQuery && respectSystemPreference) {
+    addPrefersDarkListener((event) => {
+      if (respectSystemPreference) {
+        applyTheme(event.matches ? "dark" : "light", { persist: false });
+      }
+    });
+  }
+}
+
+function applyTheme(theme, options = {}) {
+  const { persist = true } = options;
+  rootElement.setAttribute("data-theme", theme);
+  updateThemeToggleUi(theme);
+
+  if (persist) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch (_) {
+      // Ignore storage failures (e.g., private browsing).
+    }
+    respectSystemPreference = false;
+  }
+}
+
+function updateThemeToggleUi(theme) {
+  if (!themeToggleBtn) return;
+
+  const label = theme === "dark" ? "Light mode" : "Dark mode";
+  themeToggleBtn.setAttribute("aria-label", `Switch to ${label.toLowerCase()}`);
+  themeToggleBtn.classList.toggle("is-dark", theme === "dark");
+
+  const textEl = themeToggleBtn.querySelector(".theme-toggle__label");
+  if (textEl) {
+    textEl.textContent = label;
+  }
+
+  const iconEl = themeToggleBtn.querySelector(".theme-toggle__icon");
+  if (iconEl) {
+    iconEl.textContent = theme === "dark" ? "☾" : "☀";
+  }
+}
+
+function addPrefersDarkListener(listener) {
+  if (!prefersDarkQuery) return;
+  if (typeof prefersDarkQuery.addEventListener === "function") {
+    prefersDarkQuery.addEventListener("change", listener);
+  } else if (typeof prefersDarkQuery.addListener === "function") {
+    prefersDarkQuery.addListener(listener);
+  }
+}
 
 function handleFileSelection(event) {
   const file = event.target.files?.[0];
@@ -542,6 +625,9 @@ function renderGrid(grid, numbersMap) {
       }
 
       if (cellValue) {
+        const input = createCellInput(cellValue);
+        cell.appendChild(input);
+
         const letter = document.createElement("span");
         letter.className = "letter";
         letter.textContent = cellValue;
@@ -551,6 +637,69 @@ function renderGrid(grid, numbersMap) {
       gridElement.appendChild(cell);
     }
   }
+
+  gridElement.classList.toggle("reveal", revealAnswers);
+  if (revealAnswers) {
+    applyRevealStateToInputs();
+  }
+}
+
+function createCellInput(answer) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.maxLength = 1;
+  input.autocomplete = "off";
+  input.autocorrect = "off";
+  input.autocapitalize = "off";
+  input.spellcheck = false;
+  input.inputMode = "latin";
+  input.className = "cell-input";
+  input.dataset.answer = answer;
+  input.addEventListener("input", handleCellInput);
+  input.addEventListener("focus", handleCellFocus);
+  return input;
+}
+
+function handleCellInput(event) {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
+
+  const sanitized = input.value.toUpperCase().replace(/[^A-Z]/g, "");
+  input.value = sanitized.slice(-1);
+  if (input.value && input.dataset) {
+    input.dataset.userValue = input.value;
+  } else if (input.dataset) {
+    delete input.dataset.userValue;
+  }
+}
+
+function handleCellFocus(event) {
+  const input = event.target;
+  if (input instanceof HTMLInputElement) {
+    requestAnimationFrame(() => input.select());
+  }
+}
+
+function applyRevealStateToInputs() {
+  const inputs = gridElement.querySelectorAll(".cell-input");
+  inputs.forEach((input) => {
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+
+    if (revealAnswers) {
+      if (typeof input.dataset.userValue === "undefined") {
+        input.dataset.userValue = input.value || "";
+      }
+      input.value = input.dataset.answer || "";
+      input.disabled = true;
+    } else {
+      const storedValue = input.dataset.userValue ?? "";
+      input.value = storedValue;
+      input.disabled = false;
+      delete input.dataset.userValue;
+    }
+  });
 }
 
 function renderClues(acrossClues, downClues) {
@@ -580,7 +729,7 @@ function escapeHtml(text) {
 
 function setStatus(message, isError = false) {
   statusMessage.textContent = message;
-  statusMessage.style.color = isError ? "#c3342b" : "#1a1e2b";
+  statusMessage.classList.toggle("is-error", isError);
 }
 
 function handlePdfDownload() {
