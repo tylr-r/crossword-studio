@@ -389,11 +389,35 @@ export default function App() {
 
 function CrosswordGrid({ grid, numbersMap, showAnswers, cellValues, onCellChange }) {
   const cols = grid[0]?.length || 0;
+  const gridRef = useRef(null);
+  const [cellSize, setCellSize] = useState(36);
+
+  useEffect(() => {
+    const updateSize = () => {
+      if (!gridRef.current || !cols) {
+        return;
+      }
+      const padding = 20; // padding: 10px on each side
+      const gap = 4;
+      const width = gridRef.current.clientWidth - padding;
+      if (width <= 0) return;
+      const available = width - gap * Math.max(cols - 1, 0);
+      const computed = Math.floor(available / cols);
+      const next = Math.max(20, Math.min(36, computed));
+      setCellSize(next);
+    };
+
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, [cols]);
+
   return (
     <div
+      ref={gridRef}
       id="crosswordGrid"
       className={`crossword-grid ${showAnswers ? "reveal" : ""}`}
-      style={{ "--cols": cols }}
+      style={{ "--cols": cols, "--cell-size": `${cellSize}px` }}
     >
       {grid.map((row, rowIndex) =>
         row.map((value, colIndex) => {
