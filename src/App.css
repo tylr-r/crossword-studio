@@ -253,10 +253,26 @@ button:disabled {
   box-shadow: none;
 }
 
-button#downloadPdfBtn {
+.download-btn {
   background: linear-gradient(135deg, var(--success), #39f1ca);
   color: #03231b;
   box-shadow: 0 18px 35px rgba(46, 223, 176, 0.35);
+}
+
+.link-button {
+  margin-top: 0.5rem;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.link-button:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  opacity: 0.85;
 }
 
 #statusMessage {
@@ -282,6 +298,15 @@ button#downloadPdfBtn {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid var(--card-border);
   padding: 1.25rem;
+}
+
+.empty-state {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--card-border);
+  border-radius: 16px;
+  color: var(--text-muted);
 }
 
 .crossword-grid {

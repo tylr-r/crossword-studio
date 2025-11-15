@@ -1,81 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crossword Builder</title>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css" />
-    <script
-      src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
-      defer
-    ></script>
-    <script src="./script.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crossword Builder</title>
   </head>
   <body>
-    <main class="page">
-      <header class="page-header">
-        <div>
-          <h1>Crossword Builder</h1>
-          <p>Create a printable crossword from your own word list.</p>
-        </div>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">
-          <span class="theme-toggle__icon" aria-hidden="true">☀</span>
-          <span class="theme-toggle__label">Dark mode</span>
-        </button>
-      </header>
-
-      <section class="card controls">
-        <div class="field">
-          <label for="wordFile">Word &amp; clue JSON</label>
-          <input type="file" id="wordFile" accept="application/json" />
-          <p class="hint">
-            Provide an array of {"word": "...", "clue": "..."} entries (see README).
-          </p>
-        </div>
-
-        <div class="field slider-field">
-          <div class="label-row">
-            <label for="wordCount">Words in grid</label>
-            <span id="wordCountValue">10</span>
-          </div>
-          <input type="range" min="5" max="25" value="10" id="wordCount" />
-        </div>
-
-        <div class="field checkbox-field">
-          <label class="checkbox">
-            <input type="checkbox" id="showAnswers" />
-            <span>Show solutions</span>
-          </label>
-        </div>
-
-        <div class="actions">
-          <button id="generateBtn" disabled>Generate Crossword</button>
-          <button id="downloadPdfBtn" disabled>Download PDF</button>
-        </div>
-        <p id="statusMessage" role="status"></p>
-      </section>
-
-      <section class="card puzzle" aria-live="polite">
-        <div id="gridWrapper">
-          <div id="crosswordGrid" class="crossword-grid"></div>
-        </div>
-        <div class="clues">
-          <div>
-            <h2>Across</h2>
-            <ol id="acrossList"></ol>
-          </div>
-          <div>
-            <h2>Down</h2>
-            <ol id="downList"></ol>
-          </div>
-        </div>
-      </section>
-    </main>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

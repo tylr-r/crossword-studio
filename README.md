@@ -1,35 +1,23 @@
-## Crossword Builder
+## Crossword Builder (React + Vite)
 
-Simple static web app that converts a JSON list of `{word, clue}` entries into a printable crossword puzzle (PDF). No build tooling or servers are required—just open `index.html` in a modern browser.
+Modern React port of the crossword generator. The UI now renders through Vite + React, while the original crossword layout logic lives in `src/lib/crossword.js`.
 
-### Features
-- Upload any JSON file containing between 5 and 25 question/answer pairs.
-- Choose how many words (5–25) to include in the grid.
-- Auto-layout engine places words with shared letters and trims unused rows/columns.
-- View Across/Down clue lists and optionally reveal the grid answers on-screen.
-- Export a clean, solver-friendly PDF with the grid and clues.
+### Getting started
 
-### Usage
-1. Open `index.html` in your browser (double-click or run `open index.html` on macOS).
-2. Click **Word & clue JSON** and select a JSON file (see format below).
-3. Use the slider to pick how many words to include (enabled once 5+ entries are loaded).
-4. Press **Generate Crossword** to see the grid and clues.
-5. Use **Download PDF** to save a print-ready copy. Toggle **Show solutions** to display answers on-screen before exporting.
-
-### JSON format
-Provide an array of objects with `word` and `clue` keys. Extra keys are ignored, and words are automatically uppercased and stripped of non-letter characters.
-
-```json
-[
-  { "word": "planet", "clue": "Orbits a star." },
-  { "word": "galaxy", "clue": "Collection of billions of stars." },
-  { "word": "nebula", "clue": "Colorful cloud of dust and gas." }
-]
+```bash
+npm install
+npm run dev
 ```
 
-> Tip: A ready-to-use sample lives at `data/sample-words.json`.
+The dev server prints a local URL. Open it in a browser to use the builder. For a production build run `npm run build`.
+
+### Usage
+1. Click **Word & clue JSON** and provide a file that contains 5–25 `{ "word": "...", "clue": "..." }` entries. A ready-to-use sample lives at `public/data/sample-words.json`.
+2. Adjust **Words in grid** to the desired count once the slider unlocks.
+3. Pick **Generate crossword** to render the grid + clues. Use **Show solutions** to reveal answers.
+4. Press **Download PDF** for a printer-friendly export created with `jspdf`.
 
 ### Implementation notes
-- Entirely client-side (vanilla JS + CSS). Uses [`jspdf`](https://github.com/parallax/jsPDF) via CDN for PDF export.
-- Crossword builder attempts multiple randomized layouts per generation; if placement fails, try again with fewer words or a different list.
-- Grids are automatically cropped to the smallest rectangle containing every letter so printouts stay compact.
+- The crossword layout algorithm is the same one used in the previous static build; it now returns data structures that React renders as components.
+- The UI mirrors the existing styling with CSS living in `src/App.css`.
+- `jspdf` is a direct dependency (no CDN) so builds stay offline-friendly.
