@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { normalizeEntries, MAX_WORDS, MIN_WORDS } from "./lib/crossword";
+import { MAX_WORDS, MIN_WORDS, normalizeEntries } from "./lib/crossword";
 
 const THEME_STORAGE_KEY = "crossword-theme";
 
@@ -15,15 +15,19 @@ function getStoredTheme() {
   }
 }
 
+function getSystemTheme() {
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return "light";
+}
+
 function getInitialTheme() {
   const stored = getStoredTheme();
   if (stored) {
     return stored;
   }
-  if (typeof window !== "undefined" && window.matchMedia) {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  }
-  return "light";
+  return getSystemTheme();
 }
 
 export default function App() {
@@ -77,6 +81,12 @@ export default function App() {
     if (!respectSystem) {
       try {
         localStorage.setItem(THEME_STORAGE_KEY, theme);
+      } catch {
+        // ignore
+      }
+    } else {
+      try {
+        localStorage.removeItem(THEME_STORAGE_KEY);
       } catch {
         // ignore
       }
@@ -273,9 +283,14 @@ export default function App() {
     }
   };
 
-  const toggleTheme = () => {
-    setRespectSystem(false);
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  const applyThemeChoice = (value) => {
+    if (value === "system") {
+      setRespectSystem(true);
+      setTheme(getSystemTheme());
+    } else {
+      setRespectSystem(false);
+      setTheme(value);
+    }
   };
 
   const handleCellChange = (key, value) => {
@@ -303,23 +318,21 @@ export default function App() {
     <main className={`app-shell ${showBuilder ? "mode-builder" : "mode-upload"}`}>
       <header className="app-header">
         <p className="brand">Crossword Studio</p>
-        <button
-          type="button"
-          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          className={`theme-toggle ${theme === "dark" ? "is-dark" : ""}`}
-          onClick={toggleTheme}
-        >
-          <span className="theme-toggle__icon" aria-hidden="true">
-            {theme === "dark" ? "☾" : "☀"}
-          </span>
-          <span className="theme-toggle__label">{theme === "dark" ? "Light" : "Dark"} mode</span>
-        </button>
+        <label className="theme-select">
+          <span className="sr-only">Theme</span>
+          <select
+            value={respectSystem ? "system" : theme}
+            onChange={(event) => applyThemeChoice(event.target.value)}
+          >
+            <option value="dark">Dark mode</option>
+            <option value="light">Light mode</option>
+            <option value="system">System</option>
+          </select>
+        </label>
       </header>
 
       {!showBuilder ? (
         <section className="panel upload-only" aria-label="Upload word list">
-          <h1>Upload your word list</h1>
-          <p className="muted">Provide a JSON array with at least {MIN_WORDS} entries.</p>
 
           <input
             ref={fileInputRef}
@@ -346,7 +359,7 @@ export default function App() {
               <p>{status}</p>
             </div>
           ) : (
-            <p className="upload-tip">Need {MIN_WORDS} entries to continue.</p>
+            <p className="upload-tip">Upload a JSON file to get started.</p>
           )}
         </section>
       ) : (
