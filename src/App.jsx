@@ -424,11 +424,9 @@ export default function App() {
 
           {showResultsPanel ? (
             <section className="panel results" aria-live="polite">
-              <div className="flow-header">
-                <span className="step-badge" aria-hidden="true">
-                  2
-                </span>
+              <div className="flow-header results-header">
                 <div>
+                  <p className="section-label">Preview</p>
                   <h2>Puzzle &amp; clues</h2>
                   <p className="muted">
                     {puzzle ? "Adjust above and regenerate anytime." : "Generate to preview the crossword."}
@@ -530,33 +528,33 @@ function CrosswordGrid({ grid, numbersMap, showAnswers, cellValues, onCellChange
         row.map((value, colIndex) => {
           const key = `${rowIndex}-${colIndex}`;
           const number = numbersMap[rowIndex]?.[colIndex];
-          if (!value) {
+          if (value) {
             return (
               <div key={key} className="cell">
                 {number ? <span className="number">{number}</span> : null}
+                <input
+                  className="cell-input"
+                  type="text"
+                  maxLength={1}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  inputMode="latin"
+                  value={showAnswers ? value : cellValues[key] || ""}
+                  onChange={(event) => onCellChange(key, event.target.value)}
+                  onFocus={(event) => event.target.select()}
+                  disabled={showAnswers}
+                />
+                <span className="letter" aria-hidden="true">
+                  {value}
+                </span>
               </div>
             );
           }
           return (
             <div key={key} className="cell filled">
               {number ? <span className="number">{number}</span> : null}
-              <input
-                className="cell-input"
-                type="text"
-                maxLength={1}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                inputMode="latin"
-                value={showAnswers ? value : cellValues[key] || ""}
-                onChange={(event) => onCellChange(key, event.target.value)}
-                onFocus={(event) => event.target.select()}
-                disabled={showAnswers}
-              />
-              <span className="letter" aria-hidden="true">
-                {value}
-              </span>
             </div>
           );
         }),
