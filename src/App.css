@@ -99,29 +99,19 @@ code {
   gap: 1.75rem;
 }
 
-.hero {
+.app-header {
   display: flex;
   justify-content: space-between;
-  gap: 2rem;
-  align-items: flex-start;
+  align-items: center;
+  gap: 1rem;
 }
 
-.hero__copy h1 {
-  margin: 0.2rem 0 1rem;
-  font-size: clamp(2.2rem, 4vw, 3rem);
-  letter-spacing: -0.02em;
-}
-
-.hero__copy p {
+.brand {
   margin: 0;
-  max-width: 620px;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  line-height: 1.55;
-}
-
-.hero__actions {
-  display: flex;
-  gap: 0.75rem;
 }
 
 .theme-toggle {
@@ -169,6 +159,39 @@ code {
   padding: 2rem;
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-soft);
+}
+
+.upload-only {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.upload-only h1 {
+  margin: 0.5rem 0 0;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+}
+
+.upload-tip {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+}
+
+.upload-zone.full {
+  width: 100%;
+  justify-content: center;
+  min-height: 160px;
+}
+
+.mode-upload .panel {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.mode-builder .panel {
+  width: 100%;
 }
 
 .setup-card .flow-header {
@@ -324,6 +347,14 @@ code {
 
 .slider-field.simple {
   margin-top: 1.25rem;
+}
+
+.builder-controls .actions {
+  margin-top: 1.25rem;
+}
+
+.actions.compact {
+  justify-content: flex-start;
 }
 
 .label-row {
@@ -621,7 +652,6 @@ input[type="range"]:disabled::-webkit-slider-runnable-track {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
   z-index: 2;
   backdrop-filter: blur(6px);
   animation: subtleFade 0.2s ease;
@@ -632,25 +662,75 @@ input[type="range"]:disabled::-webkit-slider-runnable-track {
   color: var(--text-primary);
 }
 
+.generation-card {
+  background: rgba(5, 7, 18, 0.7);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem 1.5rem;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+:root[data-theme="light"] .generation-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+.generation-headline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .generation-title {
   margin: 0;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
-.generation-steps,
-.generation-single {
-  margin: 0.35rem 0 0;
+.generation-note {
+  margin: 0.15rem 0 0;
   color: var(--text-muted);
-  padding-left: 1rem;
+  font-size: 0.95rem;
 }
 
-.generation-steps {
-  list-style: disc;
+.generation-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+:root[data-theme="light"] .progress-bar {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.progress-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  border-radius: inherit;
+}
+
+.progress-label {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
 }
 
 .spinner {
-  width: 1rem;
-  height: 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: var(--accent);
@@ -822,16 +902,17 @@ input[type="range"]:disabled::-webkit-slider-runnable-track {
     padding: 2rem 1.25rem 2.5rem;
   }
 
-  .hero {
+  .app-header {
     flex-direction: column;
+    align-items: flex-start;
   }
 
-  .preview-meta {
+  .results-tools {
     width: 100%;
     justify-content: space-between;
   }
 
-  .preview-meta dl {
+  .results-tools dl {
     width: 100%;
     justify-content: space-between;
   }
@@ -847,12 +928,12 @@ input[type="range"]:disabled::-webkit-slider-runnable-track {
     align-items: flex-start;
   }
 
-  .preview-meta {
+  .results-tools {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .preview-meta dl {
+  .results-tools dl {
     flex-direction: column;
     width: 100%;
   }

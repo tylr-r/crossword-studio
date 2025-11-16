@@ -45,8 +45,8 @@ export default function App() {
   const sliderMax = sliderEnabled ? Math.min(MAX_WORDS, entries.length) : MAX_WORDS;
   const canGenerate = sliderEnabled;
   const canDownloadPdf = Boolean(puzzle);
-  const hasUpload = entries.length > 0;
-  const showResultsPanel = hasUpload;
+  const showBuilder = entries.length > 0;
+  const showResultsPanel = showBuilder;
   const entryPreview = entries.slice(0, 3);
   const sampleWords = entryPreview
     .map((entry) => entry.word)
@@ -131,8 +131,7 @@ export default function App() {
           if (lastStep === message) {
             return prev;
           }
-          const next = [...prev, message];
-          return next.slice(-5);
+          return [message];
         });
         return;
       }
@@ -290,78 +289,93 @@ export default function App() {
       fileInputRef.current.value = "";
     }
   };
+
+  const handleResetAll = () => {
+    setEntries([]);
+    setPuzzle(null);
+    setShowAnswers(false);
+    setCellValues({});
+    setStatus("");
+    setStatusError(false);
+    resetFileInput();
+  };
   return (
-    <main className="app-shell">
-      <header className="hero">
-        <div className="hero__copy">
-          <p className="eyebrow">Crossword studio</p>
-          <h1>Build calm crosswords from your own list.</h1>
-          <p>Upload JSON, pick a word count, and download a clean printable grid.</p>
-        </div>
-        <div className="hero__actions">
-          <button
-            type="button"
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            className={`theme-toggle ${theme === "dark" ? "is-dark" : ""}`}
-            onClick={toggleTheme}
-          >
-            <span className="theme-toggle__icon" aria-hidden="true">
-              {theme === "dark" ? "☾" : "☀"}
-            </span>
-            <span className="theme-toggle__label">{theme === "dark" ? "Light" : "Dark"} mode</span>
-          </button>
-        </div>
+    <main className={`app-shell ${showBuilder ? "mode-builder" : "mode-upload"}`}>
+      <header className="app-header">
+        <p className="brand">Crossword Studio</p>
+        <button
+          type="button"
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          className={`theme-toggle ${theme === "dark" ? "is-dark" : ""}`}
+          onClick={toggleTheme}
+        >
+          <span className="theme-toggle__icon" aria-hidden="true">
+            {theme === "dark" ? "☾" : "☀"}
+          </span>
+          <span className="theme-toggle__label">{theme === "dark" ? "Light" : "Dark"} mode</span>
+        </button>
       </header>
 
-      <section className="panel setup-card" aria-label="Crossword setup">
-        <div className="flow-header">
-          <span className="step-badge" aria-hidden="true">
-            1
-          </span>
-          <div>
-            <h2>Upload words</h2>
-            <p className="muted">JSON array with simple word and clue pairs.</p>
-          </div>
-          {hasUpload ? (
-            <button type="button" className="text-button" onClick={resetFileInput}>
-              Clear
-            </button>
-          ) : null}
-        </div>
+      {!showBuilder ? (
+        <section className="panel upload-only" aria-label="Upload word list">
+          <h1>Upload your word list</h1>
+          <p className="muted">Provide a JSON array with at least {MIN_WORDS} entries.</p>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          id="wordFile"
-          accept="application/json"
-          onChange={handleFileChange}
-          className="input-hidden"
-        />
-        <label htmlFor="wordFile" className="upload-zone">
-          <div className="upload-illustration" aria-hidden="true">
-            <span className="upload-dot" />
-            <span className="upload-dot" />
-            <span className="upload-dot" />
-          </div>
-          <div>
-            <strong>{entries.length ? "Replace file" : "Drag & drop JSON"}</strong>
-            <p>{entries.length ? "Use a different list anytime." : "Or click to pick a file."}</p>
-          </div>
-        </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            id="wordFile"
+            accept="application/json"
+            onChange={handleFileChange}
+            className="input-hidden"
+          />
+          <label htmlFor="wordFile" className="upload-zone full">
+            <div className="upload-illustration" aria-hidden="true">
+              <span className="upload-dot" />
+              <span className="upload-dot" />
+              <span className="upload-dot" />
+            </div>
+            <div>
+              <strong>Drag & drop or click to upload</strong>
+              <p>Accepts .json files.</p>
+            </div>
+          </label>
 
-        <div className="setup-meta">
-          <div>
-            <p className="summary-label">Entries</p>
-            <p className="summary-value">{entries.length || 0}</p>
-          </div>
-          <div>
-            <p className="summary-label">Sample</p>
-            <p className="summary-value">{sampleWords || "—"}</p>
-          </div>
-        </div>
+          {status ? (
+            <div id="statusMessage" role="status" className={`status-callout compact ${statusClass}`}>
+              <p>{status}</p>
+            </div>
+          ) : (
+            <p className="upload-tip">Need {MIN_WORDS} entries to continue.</p>
+          )}
+        </section>
+      ) : (
+        <>
+          <section className="panel setup-card builder-controls" aria-label="Crossword setup">
+            <div className="flow-header">
+              <span className="step-badge" aria-hidden="true">
+                1
+              </span>
+              <div>
+                <h2>Word list</h2>
+                <p className="muted">{entries.length} entries</p>
+              </div>
+              <button type="button" className="text-button" onClick={handleResetAll}>
+                Upload new file
+              </button>
+            </div>
 
-        {hasUpload ? (
-          <>
+            <div className="setup-meta">
+              <div>
+                <p className="summary-label">Entries</p>
+                <p className="summary-value">{entries.length}</p>
+              </div>
+              <div>
+                <p className="summary-label">Sample</p>
+                <p className="summary-value">{sampleWords || "—"}</p>
+              </div>
+            </div>
+
             <div className="slider-field simple">
               <div className="label-row">
                 <p className="summary-label">Words in grid</p>
@@ -377,7 +391,8 @@ export default function App() {
                 id="wordCount"
               />
             </div>
-            <div className="actions">
+
+            <div className="actions compact">
               <button
                 type="button"
                 className="btn btn-primary"
@@ -396,82 +411,82 @@ export default function App() {
                 Download PDF
               </button>
             </div>
-          </>
-        ) : (
-          <p className="setup-hint">Add at least {MIN_WORDS} entries to unlock the builder.</p>
-        )}
 
-        {status ? (
-          <div id="statusMessage" role="status" className={`status-callout compact ${statusClass}`}>
-            <p>{status}</p>
-          </div>
-        ) : null}
-      </section>
+            {status ? (
+              <div id="statusMessage" role="status" className={`status-callout compact ${statusClass}`}>
+                <p>{status}</p>
+              </div>
+            ) : null}
+          </section>
 
-      {showResultsPanel ? (
-        <section className="panel results" aria-live="polite">
-          <div className="flow-header">
-            <span className="step-badge" aria-hidden="true">
-              2
-            </span>
-            <div>
-              <h2>Preview &amp; clues</h2>
-              <p className="muted">{puzzle ? "Tweak inputs and regenerate anytime." : "Generate to see the grid."}</p>
-            </div>
-            <div className="results-tools">
-              {puzzle ? (
-                <dl>
-                  {gridSummary.map((item) => (
-                    <div key={item.label}>
-                      <dt>{item.label}</dt>
-                      <dd>{item.value}</dd>
+          {showResultsPanel ? (
+            <section className="panel results" aria-live="polite">
+              <div className="flow-header">
+                <span className="step-badge" aria-hidden="true">
+                  2
+                </span>
+                <div>
+                  <h2>Puzzle &amp; clues</h2>
+                  <p className="muted">
+                    {puzzle ? "Adjust above and regenerate anytime." : "Generate to preview the crossword."}
+                  </p>
+                </div>
+                <div className="results-tools">
+                  {puzzle ? (
+                    <dl>
+                      {gridSummary.map((item) => (
+                        <div key={item.label}>
+                          <dt>{item.label}</dt>
+                          <dd>{item.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : null}
+                  <label className={`switch ${!puzzle ? "is-disabled" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={showAnswers}
+                      onChange={(event) => setShowAnswers(event.target.checked)}
+                      disabled={!puzzle}
+                    />
+                    <span className="switch-handle" aria-hidden="true" />
+                    <span className="switch-label">Reveal</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="results-body">
+                <div id="gridWrapper" aria-busy={isGenerating}>
+                  {isGenerating ? <LoadingState steps={generationSteps} /> : null}
+                  {puzzle ? (
+                    <CrosswordGrid
+                      grid={puzzle.grid}
+                      numbersMap={puzzle.numbersMap}
+                      showAnswers={showAnswers}
+                      cellValues={cellValues}
+                      onCellChange={handleCellChange}
+                    />
+                  ) : (
+                    <EmptyState />
+                  )}
+                </div>
+                <div className="clues-stack">
+                  {puzzle ? (
+                    <div className="clue-columns">
+                      <ClueList title="Across" clues={puzzle?.acrossClues || []} />
+                      <ClueList title="Down" clues={puzzle?.downClues || []} />
                     </div>
-                  ))}
-                </dl>
-              ) : null}
-              <label className={`switch ${!puzzle ? "is-disabled" : ""}`}>
-                <input
-                  type="checkbox"
-                  checked={showAnswers}
-                  onChange={(event) => setShowAnswers(event.target.checked)}
-                  disabled={!puzzle}
-                />
-                <span className="switch-handle" aria-hidden="true" />
-                <span className="switch-label">Reveal</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="results-body">
-            <div id="gridWrapper" aria-busy={isGenerating}>
-              {isGenerating ? <LoadingState steps={generationSteps} /> : null}
-              {puzzle ? (
-                <CrosswordGrid
-                  grid={puzzle.grid}
-                  numbersMap={puzzle.numbersMap}
-                  showAnswers={showAnswers}
-                  cellValues={cellValues}
-                  onCellChange={handleCellChange}
-                />
-              ) : (
-                <EmptyState />
-              )}
-            </div>
-            <div className="clues-stack">
-              {puzzle ? (
-                <div className="clue-columns">
-                  <ClueList title="Across" clues={puzzle?.acrossClues || []} />
-                  <ClueList title="Down" clues={puzzle?.downClues || []} />
+                  ) : (
+                    <div className="empty-clues">
+                      <p>Clues unlock right after generation.</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="empty-clues">
-                  <p>Clues unlock right after generation.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      ) : null}
+              </div>
+            </section>
+          ) : null}
+        </>
+      )}
     </main>
   );
 }
@@ -593,25 +608,44 @@ function EmptyState() {
 }
 
 function LoadingState({ steps }) {
-  const hasSteps = Boolean(steps?.length);
-  const showList = hasSteps && steps.length > 1;
+  const latest = steps?.[steps.length - 1] || "";
+  const progress = parseProgress(latest);
+  const percent = progress ? Math.round((progress.current / progress.total) * 100) : null;
   return (
     <div className="generation-indicator" role="status" aria-live="polite">
-      <span className="spinner" aria-hidden="true" />
-      <div>
-        <p className="generation-title">Generating puzzle…</p>
-        {showList ? (
-          <ul className="generation-steps">
-            {steps.map((step, index) => (
-              <li key={`${step}-${index}`}>{step}</li>
-            ))}
-          </ul>
-        ) : hasSteps ? (
-          <p className="generation-single">{steps[0]}</p>
+      <div className="generation-card">
+        <div className="generation-headline">
+          <span className="spinner" aria-hidden="true" />
+          <div>
+            <p className="generation-title">Generating puzzle…</p>
+            {latest ? <p className="generation-note">{latest}</p> : null}
+          </div>
+        </div>
+        {progress ? (
+          <div className="generation-progress">
+            <div className="progress-bar" aria-hidden="true">
+              <span style={{ width: `${percent}%` }} />
+            </div>
+            <p className="progress-label">
+              {progress.current} / {progress.total}
+            </p>
+          </div>
         ) : null}
       </div>
     </div>
   );
+}
+
+function parseProgress(step) {
+  if (!step) return null;
+  const match = step.match(/(\d+)\s*of\s*(\d+)/i);
+  if (!match) return null;
+  const current = Number(match[1]);
+  const total = Number(match[2]);
+  if (Number.isNaN(current) || Number.isNaN(total) || total <= 0) {
+    return null;
+  }
+  return { current, total };
 }
 
 function drawGridOnPdf(doc, puzzle, startX, startY, cellSize) {
