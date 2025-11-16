@@ -38,6 +38,8 @@ export default function App() {
   const [statusError, setStatusError] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
   const [cellValues, setCellValues] = useState({});
+  const [activeCell, setActiveCell] = useState(null);
+  const [activeDirection, setActiveDirection] = useState("across");
   const [theme, setTheme] = useState(getInitialTheme);
   const [respectSystem, setRespectSystem] = useState(() => !getStoredTheme());
   const [isGenerating, setIsGenerating] = useState(false);
@@ -70,6 +72,55 @@ export default function App() {
     if (!status) return "";
     return statusError ? "is-error" : "";
   }, [status, statusError]);
+
+  const placementLookup = useMemo(() => {
+    if (!puzzle?.placements?.length) {
+      return { cellMap: {}, clueMap: new Map() };
+    }
+    const cellMap = {};
+    const clueMap = new Map();
+    puzzle.placements.forEach((placement) => {
+      const { direction, row, col, word, number } = placement;
+      if (Number.isFinite(number)) {
+        clueMap.set(`${direction}:${number}`, placement);
+      }
+      for (let i = 0; i < word.length; i += 1) {
+        const cellRow = direction === "down" ? row + i : row;
+        const cellCol = direction === "across" ? col + i : col;
+        const key = `${cellRow}-${cellCol}`;
+        if (!cellMap[key]) {
+          cellMap[key] = {};
+        }
+        cellMap[key][direction] = placement;
+      }
+    });
+    return { cellMap, clueMap };
+  }, [puzzle]);
+
+  const activeCellKey = activeCell ? `${activeCell.row}-${activeCell.col}` : null;
+
+  const activePlacement = useMemo(() => {
+    if (!activeCellKey) return null;
+    const placementOptions = placementLookup.cellMap[activeCellKey];
+    if (!placementOptions) return null;
+    return placementOptions[activeDirection] || placementOptions.across || placementOptions.down || null;
+  }, [activeCellKey, activeDirection, placementLookup]);
+
+  const highlightedCells = useMemo(() => {
+    if (!activePlacement) return new Set();
+    const set = new Set();
+    for (let i = 0; i < activePlacement.word.length; i += 1) {
+      const row = activePlacement.row + (activePlacement.direction === "down" ? i : 0);
+      const col = activePlacement.col + (activePlacement.direction === "across" ? i : 0);
+      set.add(`${row}-${col}`);
+    }
+    return set;
+  }, [activePlacement]);
+
+  const activeClueKey = activePlacement ? `${activePlacement.direction}:${activePlacement.number}` : null;
+  const canToggleDirection =
+    Boolean(activeCellKey) &&
+    Boolean(placementLookup.cellMap[activeCellKey]?.across && placementLookup.cellMap[activeCellKey]?.down);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -119,6 +170,7 @@ export default function App() {
 
   useEffect(() => {
     setCellValues({});
+    setActiveCell(null);
   }, [puzzle]);
 
   useEffect(() => {
@@ -147,6 +199,8 @@ export default function App() {
       if (type === "success" && puzzleData) {
         setPuzzle(puzzleData);
         setShowAnswers(false);
+        setActiveCell(null);
+        setActiveDirection("across");
         setStatus(`${puzzleData.requestedCount} words placed on a ${puzzleData.rows}×${puzzleData.cols} grid.`);
         setStatusError(false);
       } else {
@@ -292,6 +346,45 @@ export default function App() {
     const sanitized = value.toUpperCase().replace(/[^A-Z]/g, "");
     const next = sanitized.slice(-1);
     setCellValues((prev) => ({ ...prev, [key]: next }));
+  };
+
+  const handleCellSelect = (row, col, options = {}) => {
+    if (!puzzle) return;
+    const key = `${row}-${col}`;
+    const placementOptions = placementLookup.cellMap[key];
+    if (!placementOptions) return;
+
+    const isSameCell = activeCell?.row === row && activeCell?.col === col;
+    const shouldToggle = Boolean(options.toggleDirection) || (isSameCell && placementOptions.across && placementOptions.down);
+
+    let nextDirection = activeDirection;
+    if (shouldToggle) {
+      if (nextDirection === "across" && placementOptions.down) {
+        nextDirection = "down";
+      } else if (nextDirection === "down" && placementOptions.across) {
+        nextDirection = "across";
+      }
+    }
+
+    if (!placementOptions[nextDirection]) {
+      nextDirection = placementOptions.across ? "across" : "down";
+    }
+
+    setActiveCell({ row, col });
+    setActiveDirection(nextDirection);
+  };
+
+  const handleClueSelect = (direction, number) => {
+    if (!puzzle) return;
+    const placement = placementLookup.clueMap.get(`${direction}:${number}`);
+    if (!placement) return;
+    setActiveCell({ row: placement.row, col: placement.col });
+    setActiveDirection(direction);
+  };
+
+  const handleToggleDirection = () => {
+    if (!activeCell) return;
+    handleCellSelect(activeCell.row, activeCell.col, { toggleDirection: true });
   };
 
   const resetFileInput = () => {
@@ -457,25 +550,70 @@ export default function App() {
               </div>
 
               <div className="results-body">
-                <div id="gridWrapper" aria-busy={isGenerating}>
-                  {isGenerating ? <LoadingState steps={generationSteps} /> : null}
-                  {puzzle ? (
-                    <CrosswordGrid
-                      grid={puzzle.grid}
-                      numbersMap={puzzle.numbersMap}
-                      showAnswers={showAnswers}
-                      cellValues={cellValues}
-                      onCellChange={handleCellChange}
-                    />
-                  ) : (
-                    <EmptyState />
-                  )}
+                <div className="grid-column">
+                  <div className="grid-toolbar">
+                    {activePlacement ? (
+                      <div className="active-clue-card">
+                        <div className="active-clue-meta">
+                          <span className={`direction-pill direction-${activePlacement.direction}`}>
+                            {activePlacement.direction === "across" ? "Across" : "Down"}
+                          </span>
+                          <span className="active-clue-number">{activePlacement.number}</span>
+                        </div>
+                        <p className="active-clue-text">{activePlacement.clue}</p>
+                        <div className="active-clue-actions">
+                          <span className="clue-length">{activePlacement.word.length} letters</span>
+                          <button
+                            type="button"
+                            className="text-button"
+                            onClick={handleToggleDirection}
+                            disabled={!canToggleDirection}
+                          >
+                            Switch direction
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="active-clue-placeholder">Tap a cell or clue to start solving.</p>
+                    )}
+                  </div>
+
+                  <div id="gridWrapper" aria-busy={isGenerating}>
+                    {isGenerating ? <LoadingState steps={generationSteps} /> : null}
+                    {puzzle ? (
+                      <CrosswordGrid
+                        grid={puzzle.grid}
+                        numbersMap={puzzle.numbersMap}
+                        showAnswers={showAnswers}
+                        cellValues={cellValues}
+                        onCellChange={handleCellChange}
+                        onCellSelect={handleCellSelect}
+                        activeCell={activeCell}
+                        activeDirection={activeDirection}
+                        highlightedCells={highlightedCells}
+                      />
+                    ) : (
+                      <EmptyState />
+                    )}
+                  </div>
                 </div>
                 <div className="clues-stack">
                   {puzzle ? (
                     <div className="clue-columns">
-                      <ClueList title="Across" clues={puzzle?.acrossClues || []} />
-                      <ClueList title="Down" clues={puzzle?.downClues || []} />
+                      <ClueList
+                        title="Across"
+                        direction="across"
+                        clues={puzzle?.acrossClues || []}
+                        activeClueKey={activeClueKey}
+                        onSelectClue={handleClueSelect}
+                      />
+                      <ClueList
+                        title="Down"
+                        direction="down"
+                        clues={puzzle?.downClues || []}
+                        activeClueKey={activeClueKey}
+                        onSelectClue={handleClueSelect}
+                      />
                     </div>
                   ) : (
                     <div className="empty-clues">
@@ -492,7 +630,17 @@ export default function App() {
   );
 }
 
-function CrosswordGrid({ grid, numbersMap, showAnswers, cellValues, onCellChange }) {
+function CrosswordGrid({
+  grid,
+  numbersMap,
+  showAnswers,
+  cellValues,
+  onCellChange,
+  onCellSelect,
+  activeCell,
+  activeDirection,
+  highlightedCells = new Set(),
+}) {
   const cols = grid[0]?.length || 0;
   const gridRef = useRef(null);
   const [cellSize, setCellSize] = useState(36);
@@ -517,11 +665,19 @@ function CrosswordGrid({ grid, numbersMap, showAnswers, cellValues, onCellChange
     return () => window.removeEventListener("resize", updateSize);
   }, [cols]);
 
+  const handleSelection = (row, col, options = {}) => {
+    if (typeof onCellSelect === "function") {
+      onCellSelect(row, col, options);
+    }
+  };
+
   return (
     <div
       ref={gridRef}
       id="crosswordGrid"
-      className={`crossword-grid ${showAnswers ? "reveal" : ""}`}
+      className={`crossword-grid ${showAnswers ? "reveal" : ""} ${
+        activeDirection ? `direction-${activeDirection}` : ""
+      }`}
       style={{ "--cols": cols, "--cell-size": `${cellSize}px` }}
     >
       {grid.map((row, rowIndex) =>
@@ -529,8 +685,17 @@ function CrosswordGrid({ grid, numbersMap, showAnswers, cellValues, onCellChange
           const key = `${rowIndex}-${colIndex}`;
           const number = numbersMap[rowIndex]?.[colIndex];
           if (value) {
+            const isActive = activeCell?.row === rowIndex && activeCell?.col === colIndex;
+            const isHighlighted = highlightedCells.has(key);
+            const cellClassNames = [
+              "cell",
+              isHighlighted ? "is-highlighted" : "",
+              isActive ? "is-active" : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
             return (
-              <div key={key} className="cell">
+              <div key={key} className={cellClassNames}>
                 {number ? <span className="number">{number}</span> : null}
                 <input
                   className="cell-input"
@@ -543,7 +708,13 @@ function CrosswordGrid({ grid, numbersMap, showAnswers, cellValues, onCellChange
                   inputMode="latin"
                   value={showAnswers ? value : cellValues[key] || ""}
                   onChange={(event) => onCellChange(key, event.target.value)}
-                  onFocus={(event) => event.target.select()}
+                  onFocus={(event) => {
+                    event.target.select();
+                    handleSelection(rowIndex, colIndex);
+                  }}
+                  onClick={(event) =>
+                    handleSelection(rowIndex, colIndex, { toggleDirection: event.detail > 1 })
+                  }
                   disabled={showAnswers}
                 />
                 <span className="letter" aria-hidden="true">
@@ -563,7 +734,7 @@ function CrosswordGrid({ grid, numbersMap, showAnswers, cellValues, onCellChange
   );
 }
 
-function ClueList({ title, clues }) {
+function ClueList({ title, clues, direction, activeClueKey, onSelectClue }) {
   if (!clues.length) {
     return (
       <div className="clue-group is-empty">
@@ -582,17 +753,26 @@ function ClueList({ title, clues }) {
         <span className="clue-title">{title}</span>
         <span className="pill">{clues.length}</span>
       </div>
-      <ol>
-        {clues.map((clue) => (
-          <li key={clue.number}>
-            <span className="clue-number">{clue.number}</span>
-            <div className="clue-copy">
-              <span>{clue.clue}</span>
-              <span className="clue-length">{clue.answerLength} letters</span>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <div className="clue-list">
+        {clues.map((clue) => {
+          const clueKey = `${direction}:${clue.number}`;
+          const isActive = clueKey === activeClueKey;
+          return (
+            <button
+              key={clue.number}
+              type="button"
+              className={`clue-item ${isActive ? "is-active" : ""}`}
+              onClick={() => onSelectClue?.(direction, clue.number)}
+            >
+              <span className="clue-number">{clue.number}</span>
+              <div className="clue-copy">
+                <span>{clue.clue}</span>
+                <span className="clue-length">{clue.answerLength} letters</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
