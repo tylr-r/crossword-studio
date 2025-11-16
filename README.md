@@ -1,23 +1,30 @@
-## Crossword Builder (React + Vite)
+## Crossword Studio
 
-Modern React port of the crossword generator. The UI now renders through Vite + React, while the original crossword layout logic lives in `src/lib/crossword.js`.
+Crossword Studio is a simple React + Vite tool for turning a JSON list of `{ word, clue }` pairs into a printable crossword. Upload a file, pick how many words to place, generate the puzzle, and export a PDF — everything happens in the browser.
 
-### Getting started
+### Quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-The dev server prints a local URL. Open it in a browser to use the builder. For a production build run `npm run build`.
+Open the dev URL in your browser. For production builds run `npm run build`.
 
-### Usage
-1. Click **Word & clue JSON** and provide a file that contains 5–25 `{ "word": "...", "clue": "..." }` entries. A ready-to-use sample lives at `public/data/sample-words.json`.
-2. Adjust **Words in grid** to the desired count once the slider unlocks.
-3. Pick **Generate crossword** to render the grid + clues. Use **Show solutions** to reveal answers.
-4. Press **Download PDF** for a printer-friendly export created with `jspdf`.
+### JSON format
+Provide an array with `word` and `clue` keys:
 
-### Implementation notes
-- The crossword layout algorithm is the same one used in the previous static build; it now returns data structures that React renders as components.
-- The UI mirrors the existing styling with CSS living in `src/App.css`.
-- `jspdf` is a direct dependency (no CDN) so builds stay offline-friendly.
+```json
+[
+  { "word": "seattle", "clue": "Emerald City" },
+  { "word": "madia", "clue": "Your favorite crossword maker" }
+]
+```
+
+A minimum of **5** entries is required and you can include up to **25** words per puzzle. A ready-to-use sample lives at `public/data/sample-words.json`.
+
+### Basic flow
+1. Upload the JSON file on the first screen.
+2. Adjust the **Words in grid** slider if needed.
+3. Click **Generate** to build the crossword and clues.
+4. Reveal answers or download the PDF export.
