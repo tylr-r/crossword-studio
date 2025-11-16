@@ -312,7 +312,14 @@ export default function App() {
   return (
     <main className={`app-shell ${showBuilder ? "mode-builder" : "mode-upload"}`}>
       <header className="app-header">
-        <p className="brand">Crossword Studio</p>
+        <div className="brand">
+          <span className="logo-grid" aria-hidden="true">
+            <span className="logo-cell" />
+            <span className="logo-cell" />
+            <span className="logo-cell" />
+          </span>
+          <p>Crossword Studio</p>
+        </div>
         <label className="theme-select">
           <span className="sr-only">Theme</span>
           <select

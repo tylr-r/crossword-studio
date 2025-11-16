@@ -112,6 +112,44 @@ code {
   letter-spacing: 0.35em;
   font-size: 0.8rem;
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.brand p {
+  margin: 0;
+}
+
+.logo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 14px);
+  grid-template-rows: repeat(2, 14px);
+  gap: 4px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+:root[data-theme="dark"] .logo-grid {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.logo-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 6px;
+  background: rgba(111, 123, 255, 0.3);
+}
+
+.logo-cell--highlight {
+  background: #fff;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #444a6f;
 }
 
 .theme-select select {
