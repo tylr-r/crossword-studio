@@ -51,11 +51,6 @@ export default function App() {
   const canDownloadPdf = Boolean(puzzle);
   const showBuilder = entries.length > 0;
   const showResultsPanel = showBuilder;
-  const entryPreview = entries.slice(0, 3);
-  const sampleWords = entryPreview
-    .map((entry) => entry.word)
-    .filter(Boolean)
-    .join(" • ");
   const gridRows = puzzle?.grid.length || 0;
   const gridCols = puzzle?.grid[0]?.length || 0;
   const filledCells = puzzle ? puzzle.grid.flat().filter(Boolean).length : 0;
@@ -364,35 +359,21 @@ export default function App() {
         </section>
       ) : (
         <>
-          <section className="panel setup-card builder-controls" aria-label="Crossword setup">
-            <div className="flow-header">
-              <span className="step-badge" aria-hidden="true">
-                1
-              </span>
+          <section className="panel builder-controls" aria-label="Crossword setup">
+            <div className="builder-header">
               <div>
-                <h2>Word list</h2>
-                <p className="muted">{entries.length} entries</p>
+                <p className="section-label">Word list</p>
+                <p className="entry-count">{entries.length} entries</p>
               </div>
               <button type="button" className="text-button" onClick={handleResetAll}>
                 Upload new file
               </button>
             </div>
 
-            <div className="setup-meta">
-              <div>
-                <p className="summary-label">Entries</p>
-                <p className="summary-value">{entries.length}</p>
-              </div>
-              <div>
-                <p className="summary-label">Sample</p>
-                <p className="summary-value">{sampleWords || "—"}</p>
-              </div>
-            </div>
-
-            <div className="slider-field simple">
-              <div className="label-row">
-                <p className="summary-label">Words in grid</p>
-                <p className="slider-value">{wordCount}</p>
+            <div className="slider-field condensed">
+              <div className="slider-inline">
+                <span>Words in grid</span>
+                <strong>{wordCount}</strong>
               </div>
               <input
                 type="range"
@@ -405,7 +386,7 @@ export default function App() {
               />
             </div>
 
-            <div className="actions compact">
+            <div className="actions compact builder-actions">
               <button
                 type="button"
                 className="btn btn-primary"
@@ -421,14 +402,16 @@ export default function App() {
                 disabled={!canDownloadPdf || isGenerating}
                 onClick={handleDownloadPdf}
               >
-                Download PDF
+                Print PDF
+              </button>
+              <button type="button" className="btn btn-tertiary" onClick={handleResetAll}>
+                Reset
               </button>
             </div>
-
             {status ? (
-              <div id="statusMessage" role="status" className={`status-callout compact ${statusClass}`}>
-                <p>{status}</p>
-              </div>
+              <p role="status" className={`builder-status ${statusClass}`}>
+                {status}
+              </p>
             ) : null}
           </section>
 

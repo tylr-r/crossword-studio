@@ -194,27 +194,30 @@ code {
   width: 100%;
 }
 
-.setup-card .flow-header {
+.builder-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.builder-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
-.setup-meta {
-  margin-top: 1.25rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-radius: 18px;
-  border: 1px solid var(--border-soft);
-  background: var(--surface-muted);
+.section-label {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-.setup-hint {
-  margin-top: 1.25rem;
-  padding: 0.85rem 1rem;
-  border-radius: 16px;
-  border: 1px dashed var(--border-soft);
-  color: var(--text-muted);
+.entry-count {
+  margin: 0.2rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .flow-header {
@@ -265,6 +268,16 @@ code {
   font-weight: 600;
   color: var(--text-primary);
   word-break: break-word;
+}
+
+.builder-status {
+  margin: 0.2rem 0 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.builder-status.is-error {
+  color: var(--danger);
 }
 
 .input-hidden {
@@ -345,35 +358,35 @@ code {
   gap: 0.75rem;
 }
 
-.slider-field.simple {
-  margin-top: 1.25rem;
+.slider-field.condensed {
+  margin-top: 0.25rem;
 }
 
 .builder-controls .actions {
-  margin-top: 1.25rem;
+  margin-top: 0.5rem;
 }
 
 .actions.compact {
   justify-content: flex-start;
 }
 
-.label-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-end;
+.builder-actions {
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.slider-value {
-  font-size: 2rem;
-  font-weight: 600;
-  margin: 0.15rem 0 0;
+.slider-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
 }
 
-.slider-hint {
-  color: var(--text-muted);
-  font-size: 0.9rem;
+.slider-inline strong {
+  font-size: 1.4rem;
+  color: var(--text-primary);
 }
 
 input[type="range"] {
@@ -445,6 +458,13 @@ input[type="range"]:disabled::-webkit-slider-runnable-track {
   background: transparent;
   color: var(--text-primary);
   border: 1px solid var(--border-soft);
+}
+
+.btn-tertiary {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding-inline: 1rem;
 }
 
 .btn:disabled {
