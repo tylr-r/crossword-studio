@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { MAX_WORDS, MIN_WORDS, normalizeEntries } from "./lib/crossword";
+import { generateWordListFromTheme } from "./lib/wordListGenerator";
 
 const THEME_STORAGE_KEY = "crossword-theme";
+const OPENAI_KEY_CONFIGURED = Boolean(import.meta.env?.VITE_OPENAI_API_KEY);
 
 function getStoredTheme() {
   if (typeof window === "undefined") {
@@ -36,6 +38,10 @@ export default function App() {
   const [puzzle, setPuzzle] = useState(null);
   const [status, setStatus] = useState("");
   const [statusError, setStatusError] = useState(false);
+  const [wordSource, setWordSource] = useState("upload");
+  const [themePrompt, setThemePrompt] = useState("");
+  const [isWordListGenerating, setIsWordListGenerating] = useState(false);
+  const [lastGeneratedTheme, setLastGeneratedTheme] = useState("");
   const [showAnswers, setShowAnswers] = useState(false);
   const [cellValues, setCellValues] = useState({});
   const [activeCell, setActiveCell] = useState(null);
@@ -53,6 +59,9 @@ export default function App() {
   const canDownloadPdf = Boolean(puzzle);
   const showBuilder = entries.length > 0;
   const showResultsPanel = showBuilder;
+  const usingUploadSource = wordSource === "upload";
+  const usingAiSource = wordSource === "ai";
+  const aiDisabled = !OPENAI_KEY_CONFIGURED;
   const gridRows = puzzle?.grid.length || 0;
   const gridCols = puzzle?.grid[0]?.length || 0;
   const filledCells = puzzle ? puzzle.grid.flat().filter(Boolean).length : 0;
@@ -248,6 +257,41 @@ export default function App() {
     }
   };
 
+  const handleThemeWordGeneration = async (event) => {
+    event?.preventDefault();
+    if (isWordListGenerating) return;
+    const sanitizedTheme = themePrompt.trim();
+    if (!sanitizedTheme) {
+      setStatus("Enter a theme before generating words.");
+      setStatusError(true);
+      return;
+    }
+    setWordSource("ai");
+    setIsWordListGenerating(true);
+    setStatus("Asking GPT-5.1 for themed entries…");
+    setStatusError(false);
+    setShowAnswers(false);
+    setGenerationSteps([]);
+    try {
+      const desiredCount = Math.min(MAX_WORDS, Math.max(wordCount + 5, MIN_WORDS));
+      const generated = await generateWordListFromTheme(sanitizedTheme, { count: desiredCount });
+      setEntries(generated);
+      setPuzzle(null);
+      setCellValues({});
+      resetFileInput();
+      setLastGeneratedTheme(sanitizedTheme);
+      setStatus(
+        `Generated ${generated.length} entries for "${sanitizedTheme}". Choose up to ${Math.min(MAX_WORDS, generated.length)} words.`,
+      );
+      setStatusError(false);
+    } catch (error) {
+      setStatus(error?.message || "Unable to generate a themed list right now.");
+      setStatusError(true);
+    } finally {
+      setIsWordListGenerating(false);
+    }
+  };
+
   const handleGenerate = () => {
     if (!workerRef.current) {
       setStatus("Puzzle generator not ready. Please try again.");
@@ -426,6 +470,10 @@ export default function App() {
     setPuzzle(null);
     setShowAnswers(false);
     setCellValues({});
+    setGenerationSteps([]);
+    setIsWordListGenerating(false);
+    setThemePrompt("");
+    setLastGeneratedTheme("");
     setStatus("");
     setStatusError(false);
     resetFileInput();
@@ -455,34 +503,113 @@ export default function App() {
       </header>
 
       {!showBuilder ? (
-        <section className="panel upload-only" aria-label="Upload word list">
+        <section className="panel upload-only" aria-label="Select word source">
+          <div className="word-source-toggle" role="tablist" aria-label="Word source options">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={usingUploadSource}
+              className={`source-option ${usingUploadSource ? "is-active" : ""}`}
+              onClick={() => setWordSource("upload")}
+            >
+              <span className="option-eyebrow">Option 1</span>
+              <strong>Upload a JSON list</strong>
+              <p>Use your own curated entries.</p>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={usingAiSource}
+              className={`source-option ${usingAiSource ? "is-active" : ""}`}
+              onClick={() => setWordSource("ai")}
+            >
+              <span className="option-eyebrow">Option 2</span>
+              <strong>Generate with GPT-5.1</strong>
+              <p>Create a themed list with OpenAI.</p>
+            </button>
+          </div>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            id="wordFile"
-            accept="application/json"
-            onChange={handleFileChange}
-            className="input-hidden"
-          />
-          <label htmlFor="wordFile" className="upload-zone full">
-            <div className="upload-illustration" aria-hidden="true">
-              <span className="upload-dot" />
-              <span className="upload-dot" />
-              <span className="upload-dot" />
-            </div>
-            <div>
-              <strong>Drag & drop or click to upload</strong>
-              <p>Accepts .json files.</p>
-            </div>
-          </label>
+          {usingUploadSource ? (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                id="wordFile"
+                accept="application/json"
+                onChange={handleFileChange}
+                className="input-hidden"
+              />
+              <label htmlFor="wordFile" className="upload-zone full">
+                <div className="upload-illustration" aria-hidden="true">
+                  <span className="upload-dot" />
+                  <span className="upload-dot" />
+                  <span className="upload-dot" />
+                </div>
+                <div>
+                  <strong>Drag & drop or click to upload</strong>
+                  <p>Accepts .json files.</p>
+                </div>
+              </label>
+            </>
+          ) : (
+            <form className="ai-generator" onSubmit={handleThemeWordGeneration}>
+              <div className="field-group">
+                <label htmlFor="themeInput">Theme or subject</label>
+                <input
+                  id="themeInput"
+                  type="text"
+                  value={themePrompt}
+                  onChange={(event) => setThemePrompt(event.target.value)}
+                  placeholder='e.g. "Summer travel" or "Space exploration"'
+                  autoComplete="off"
+                />
+                <p className="field-hint">We will request up to {MAX_WORDS} entries that match this theme.</p>
+              </div>
+              <div className="actions compact">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={aiDisabled || isWordListGenerating || !themePrompt.trim()}
+                  aria-busy={isWordListGenerating}
+                >
+                  {isWordListGenerating ? "Generating word list…" : "Generate word list"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-tertiary"
+                  onClick={() => {
+                    setThemePrompt("");
+                    setLastGeneratedTheme("");
+                    setStatus("");
+                    setStatusError(false);
+                  }}
+                >
+                  Clear theme
+                </button>
+              </div>
+              <p className="field-hint">
+                Uses your OpenAI API key and the GPT-5.1 model to craft answer/clue pairs automatically.
+              </p>
+              {aiDisabled ? (
+                <p className="warning">
+                  Set <code>VITE_OPENAI_API_KEY</code> in your environment to enable AI generation.
+                </p>
+              ) : lastGeneratedTheme ? (
+                <p className="field-hint">
+                  Last generated list: <strong>{lastGeneratedTheme}</strong>.
+                </p>
+              ) : null}
+            </form>
+          )}
 
           {status ? (
             <div id="statusMessage" role="status" className={`status-callout compact ${statusClass}`}>
               <p>{status}</p>
             </div>
           ) : (
-            <p className="upload-tip">Upload a JSON file to get started.</p>
+            <p className="upload-tip">
+              {usingUploadSource ? "Upload a JSON file to get started." : "Describe a theme to create a fresh list."}
+            </p>
           )}
         </section>
       ) : (
@@ -494,7 +621,7 @@ export default function App() {
                 <p className="entry-count">{entries.length} entries</p>
               </div>
               <button type="button" className="text-button" onClick={handleResetAll}>
-                Upload new file
+                Choose another list
               </button>
             </div>
 
