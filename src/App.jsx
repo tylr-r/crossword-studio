@@ -342,10 +342,35 @@ export default function App() {
     }
   };
 
-  const handleCellChange = (key, value) => {
+  const handleCellInput = (row, col, value) => {
+    const key = `${row}-${col}`;
     const sanitized = value.toUpperCase().replace(/[^A-Z]/g, "");
-    const next = sanitized.slice(-1);
-    setCellValues((prev) => ({ ...prev, [key]: next }));
+    const nextChar = sanitized.slice(-1);
+    setCellValues((prev) => ({ ...prev, [key]: nextChar }));
+
+    if (!nextChar || showAnswers) {
+      return;
+    }
+
+    const placementOptions = placementLookup.cellMap[key];
+    if (!placementOptions) return;
+
+    let direction = activeDirection;
+    if (!placementOptions[direction]) {
+      direction = placementOptions.across ? "across" : placementOptions.down ? "down" : null;
+    }
+    const placement = direction ? placementOptions[direction] : null;
+    if (!placement) return;
+
+    const index = direction === "across" ? col - placement.col : row - placement.row;
+    if (index >= placement.word.length - 1) {
+      return;
+    }
+
+    const nextRow = direction === "across" ? row : row + 1;
+    const nextCol = direction === "across" ? col + 1 : col;
+    setActiveCell({ row: nextRow, col: nextCol });
+    setActiveDirection(direction);
   };
 
   const handleCellSelect = (row, col, options = {}) => {
@@ -586,7 +611,7 @@ export default function App() {
                         numbersMap={puzzle.numbersMap}
                         showAnswers={showAnswers}
                         cellValues={cellValues}
-                        onCellChange={handleCellChange}
+                        onCellChange={handleCellInput}
                         onCellSelect={handleCellSelect}
                         activeCell={activeCell}
                         activeDirection={activeDirection}
@@ -665,6 +690,18 @@ function CrosswordGrid({
     return () => window.removeEventListener("resize", updateSize);
   }, [cols]);
 
+  useEffect(() => {
+    if (!gridRef.current || !activeCell || showAnswers) {
+      return;
+    }
+    const key = `${activeCell.row}-${activeCell.col}`;
+    const input = gridRef.current.querySelector(`input[data-cell="${key}"]`);
+    if (input && document.activeElement !== input) {
+      input.focus();
+      input.select();
+    }
+  }, [activeCell, showAnswers]);
+
   const handleSelection = (row, col, options = {}) => {
     if (typeof onCellSelect === "function") {
       onCellSelect(row, col, options);
@@ -706,8 +743,9 @@ function CrosswordGrid({
                   autoCapitalize="off"
                   spellCheck={false}
                   inputMode="latin"
+                  data-cell={key}
                   value={showAnswers ? value : cellValues[key] || ""}
-                  onChange={(event) => onCellChange(key, event.target.value)}
+                  onChange={(event) => onCellChange(rowIndex, colIndex, event.target.value)}
                   onFocus={(event) => {
                     event.target.select();
                     handleSelection(rowIndex, colIndex);
