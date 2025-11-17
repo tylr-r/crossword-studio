@@ -388,11 +388,20 @@ export default function App() {
 
   const handleCellInput = (row, col, value) => {
     const key = `${row}-${col}`;
+    const previousChar = cellValues[key] || "";
     const sanitized = value.toUpperCase().replace(/[^A-Z]/g, "");
     const nextChar = sanitized.slice(-1);
-    setCellValues((prev) => ({ ...prev, [key]: nextChar }));
+    setCellValues((prev) => {
+      const updated = { ...prev };
+      if (nextChar) {
+        updated[key] = nextChar;
+      } else {
+        delete updated[key];
+      }
+      return updated;
+    });
 
-    if (!nextChar || showAnswers) {
+    if (showAnswers) {
       return;
     }
 
@@ -407,14 +416,24 @@ export default function App() {
     if (!placement) return;
 
     const index = direction === "across" ? col - placement.col : row - placement.row;
-    if (index >= placement.word.length - 1) {
+    if (nextChar) {
+      if (index >= placement.word.length - 1) {
+        return;
+      }
+      const nextRow = direction === "across" ? row : row + 1;
+      const nextCol = direction === "across" ? col + 1 : col;
+      setActiveCell({ row: nextRow, col: nextCol });
+      setActiveDirection(direction);
       return;
     }
 
-    const nextRow = direction === "across" ? row : row + 1;
-    const nextCol = direction === "across" ? col + 1 : col;
-    setActiveCell({ row: nextRow, col: nextCol });
-    setActiveDirection(direction);
+    const removedChar = value.length === 0 && Boolean(previousChar);
+    if (removedChar && index > 0) {
+      const prevRow = direction === "across" ? row : row - 1;
+      const prevCol = direction === "across" ? col - 1 : col;
+      setActiveCell({ row: prevRow, col: prevCol });
+      setActiveDirection(direction);
+    }
   };
 
   const handleCellSelect = (row, col, options = {}) => {
