@@ -931,6 +931,7 @@ input[type="range"]:disabled::-webkit-slider-runnable-track {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--grid-number);
+  opacity: 0.75;
 }
 
 .cell .letter {
