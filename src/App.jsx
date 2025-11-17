@@ -678,12 +678,15 @@ function CrosswordGrid({
       if (!gridRef.current || !cols) {
         return;
       }
-      const padding = 32; // matches the 1.25rem padding inside the grid
+      const containerWidth = gridRef.current.parentElement?.clientWidth || gridRef.current.clientWidth;
+      if (!containerWidth) return;
+      const padding = 0;
       const gap = 6;
-      const width = gridRef.current.clientWidth - padding;
+      const width = containerWidth - padding;
       if (width <= 0) return;
-      const available = width - gap * Math.max(cols - 1, 0);
-      const computed = Math.floor(available / cols);
+      const visibleCols = Math.min(cols, 8);
+      const available = width - gap * Math.max(visibleCols - 1, 0);
+      const computed = Math.floor(available / visibleCols);
       const next = Math.max(20, Math.min(36, computed));
       setCellSize(next);
     };
