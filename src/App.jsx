@@ -380,7 +380,10 @@ export default function App() {
     if (!placementOptions) return;
 
     const isSameCell = activeCell?.row === row && activeCell?.col === col;
-    const shouldToggle = Boolean(options.toggleDirection) || (isSameCell && placementOptions.across && placementOptions.down);
+    const allowSameCellToggle = Boolean(options.allowSameCellToggle);
+    const shouldToggle =
+      Boolean(options.toggleDirection) ||
+      (allowSameCellToggle && isSameCell && placementOptions.across && placementOptions.down);
 
     let nextDirection = activeDirection;
     if (shouldToggle) {
@@ -751,7 +754,10 @@ function CrosswordGrid({
                     handleSelection(rowIndex, colIndex);
                   }}
                   onClick={(event) =>
-                    handleSelection(rowIndex, colIndex, { toggleDirection: event.detail > 1 })
+                    handleSelection(rowIndex, colIndex, {
+                      toggleDirection: event.detail > 1,
+                      allowSameCellToggle: true,
+                    })
                   }
                   disabled={showAnswers}
                 />
