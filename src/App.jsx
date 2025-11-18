@@ -268,7 +268,7 @@ export default function App() {
     }
     setWordSource("ai");
     setIsWordListGenerating(true);
-    setStatus("Asking GPT-5.1 for themed entries…");
+    setStatus("Asking the AI assistant for themed entries…");
     setStatusError(false);
     setShowAnswers(false);
     setGenerationSteps([]);
@@ -543,8 +543,8 @@ export default function App() {
               onClick={() => setWordSource("ai")}
             >
               <span className="option-eyebrow">Option 2</span>
-              <strong>Generate with GPT-5.1</strong>
-              <p>Create a themed list with OpenAI.</p>
+              <strong>Generate with AI</strong>
+              <p>Create a themed list with the built-in AI assistant.</p>
             </button>
           </div>
 
@@ -606,13 +606,9 @@ export default function App() {
                   Clear theme
                 </button>
               </div>
-              <p className="field-hint">
-                Uses your OpenAI API key and the GPT-5.1 model to craft answer/clue pairs automatically.
-              </p>
+              <p className="field-hint">Uses the AI assistant to craft answer/clue pairs automatically.</p>
               {aiDisabled ? (
-                <p className="warning">
-                  Set <code>VITE_OPENAI_API_KEY</code> in your environment to enable AI generation.
-                </p>
+                <p className="warning">AI generation is disabled because no AI access key is configured.</p>
               ) : lastGeneratedTheme ? (
                 <p className="field-hint">
                   Last generated list: <strong>{lastGeneratedTheme}</strong>.

@@ -6,7 +6,7 @@ const DEFAULT_TARGET_WORDS = 20;
 export async function generateWordListFromTheme(theme, options = {}) {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("Set VITE_OPENAI_API_KEY in your environment to enable AI word generation.");
+    throw new Error("AI word generation is disabled because no access key is configured.");
   }
 
   const sanitizedTheme = theme?.trim();
@@ -32,7 +32,7 @@ export async function generateWordListFromTheme(theme, options = {}) {
   });
 
   if (!response.ok) {
-    let message = `OpenAI request failed with status ${response.status}.`;
+    let message = `The AI service request failed with status ${response.status}.`;
     try {
       const errorBody = await response.json();
       if (errorBody?.error?.message) {
@@ -98,7 +98,7 @@ function extractTextFromResponse(data) {
     }
   }
 
-  throw new Error("OpenAI response did not contain any text output.");
+  throw new Error("The AI service response did not contain any text output.");
 }
 
 function parseEntriesFromText(text) {
