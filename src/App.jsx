@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
+import AuthModal from "./components/AuthModal";
+import SavedListsModal from "./components/SavedListsModal";
+import { useAuth } from "./contexts/AuthContext";
 import { MAX_WORDS, MIN_WORDS, normalizeEntries } from "./lib/crossword";
 import { generateWordListFromTheme } from "./lib/wordListGenerator";
 
@@ -52,6 +55,11 @@ export default function App() {
   const [generationSteps, setGenerationSteps] = useState([]);
   const workerRef = useRef(null);
   const fileInputRef = useRef(null);
+  
+  // Auth & Saved Lists State
+  const { currentUser, logout } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSavedListsModal, setShowSavedListsModal] = useState(false);
 
   const sliderEnabled = entries.length >= MIN_WORDS;
   const sliderMax = sliderEnabled ? Math.min(MAX_WORDS, entries.length) : MAX_WORDS;
@@ -519,6 +527,32 @@ export default function App() {
             <option value="system">System</option>
           </select>
         </label>
+        
+        <div className="auth-controls">
+          {currentUser ? (
+            <>
+              <button 
+                className="btn btn-tertiary btn-sm"
+                onClick={() => setShowSavedListsModal(true)}
+              >
+                My Lists
+              </button>
+              <button 
+                className="btn btn-tertiary btn-sm"
+                onClick={() => logout()}
+              >
+                Log Out
+              </button>
+            </>
+          ) : (
+            <button 
+              className="btn btn-primary btn-sm"
+              onClick={() => setShowAuthModal(true)}
+            >
+              Sign In
+            </button>
+          )}
+        </div>
       </header>
 
       {!showBuilder ? (
@@ -795,6 +829,23 @@ export default function App() {
             </section>
           ) : null}
         </>
+      )}
+      
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+      {showSavedListsModal && (
+        <SavedListsModal 
+          onClose={() => setShowSavedListsModal(false)} 
+          onLoadList={(loadedEntries) => {
+            setEntries(loadedEntries);
+            setPuzzle(null);
+            setShowAnswers(false);
+            setCellValues({});
+            setStatus(`Loaded ${loadedEntries.length} entries from saved list.`);
+            setStatusError(false);
+          }}
+          currentEntries={entries}
+          currentTheme={lastGeneratedTheme}
+        />
       )}
     </main>
   );
